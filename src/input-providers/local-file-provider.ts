@@ -1,5 +1,5 @@
 import * as fs from 'fs'
-import {glob} from 'fast-glob'
+import glob from 'fast-glob'
 import {FileContent, InputProvider, ReportInput} from './input-provider'
 import {listFiles} from '../utils/git'
 

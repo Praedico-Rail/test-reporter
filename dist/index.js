@@ -179,10 +179,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.LocalFileProvider = void 0;
 const fs = __importStar(__nccwpck_require__(7147));
-const fast_glob_1 = __nccwpck_require__(3664);
+const fast_glob_1 = __importDefault(__nccwpck_require__(3664));
 const git_1 = __nccwpck_require__(9844);
 class LocalFileProvider {
     constructor(name, pattern) {
@@ -193,7 +196,7 @@ class LocalFileProvider {
         return __awaiter(this, void 0, void 0, function* () {
             const result = [];
             for (const pat of this.pattern) {
-                const paths = yield (0, fast_glob_1.glob)(pat, { dot: true });
+                const paths = yield (0, fast_glob_1.default)(pat, { dot: true });
                 for (const file of paths) {
                     const content = yield fs.promises.readFile(file, { encoding: 'utf8' });
                     result.push({ file, content });
@@ -404,9 +407,8 @@ class TestReporter {
                     throw error;
                 }
             }
-            let baseUrl = '';
             const run_attempt = (_a = process.env['GITHUB_RUN_ATTEMPT']) !== null && _a !== void 0 ? _a : 1;
-            baseUrl = `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}/attempts/${run_attempt}`;
+            const baseUrl = `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}/attempts/${run_attempt}`;
             core.info('Creating report summary');
             const { listSuites, listTests, onlySummary, slugPrefix } = this;
             const summary = (0, get_report_1.getReport)(results, { listSuites, listTests, baseUrl, slugPrefix, onlySummary });

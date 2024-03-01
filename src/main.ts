@@ -179,10 +179,8 @@ class TestReporter {
       }
     }
 
-    let baseUrl = ''
-
     const run_attempt = process.env['GITHUB_RUN_ATTEMPT'] ?? 1
-    baseUrl = `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}/attempts/${run_attempt}`
+    const baseUrl = `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}/attempts/${run_attempt}`
 
     core.info('Creating report summary')
     const {listSuites, listTests, onlySummary, slugPrefix} = this
