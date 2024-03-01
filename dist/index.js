@@ -5192,11 +5192,17 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 var _a;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getCmdPath = exports.tryGetExecutablePath = exports.isRooted = exports.isDirectory = exports.exists = exports.IS_WINDOWS = exports.unlink = exports.symlink = exports.stat = exports.rmdir = exports.rename = exports.readlink = exports.readdir = exports.mkdir = exports.lstat = exports.copyFile = exports.chmod = void 0;
+exports.getCmdPath = exports.tryGetExecutablePath = exports.isRooted = exports.isDirectory = exports.exists = exports.READONLY = exports.UV_FS_O_EXLOCK = exports.IS_WINDOWS = exports.unlink = exports.symlink = exports.stat = exports.rmdir = exports.rm = exports.rename = exports.readlink = exports.readdir = exports.open = exports.mkdir = exports.lstat = exports.copyFile = exports.chmod = void 0;
 const fs = __importStar(__nccwpck_require__(7147));
 const path = __importStar(__nccwpck_require__(1017));
-_a = fs.promises, exports.chmod = _a.chmod, exports.copyFile = _a.copyFile, exports.lstat = _a.lstat, exports.mkdir = _a.mkdir, exports.readdir = _a.readdir, exports.readlink = _a.readlink, exports.rename = _a.rename, exports.rmdir = _a.rmdir, exports.stat = _a.stat, exports.symlink = _a.symlink, exports.unlink = _a.unlink;
+_a = fs.promises
+// export const {open} = 'fs'
+, exports.chmod = _a.chmod, exports.copyFile = _a.copyFile, exports.lstat = _a.lstat, exports.mkdir = _a.mkdir, exports.open = _a.open, exports.readdir = _a.readdir, exports.readlink = _a.readlink, exports.rename = _a.rename, exports.rm = _a.rm, exports.rmdir = _a.rmdir, exports.stat = _a.stat, exports.symlink = _a.symlink, exports.unlink = _a.unlink;
+// export const {open} = 'fs'
 exports.IS_WINDOWS = process.platform === 'win32';
+// See https://github.com/nodejs/node/blob/d0153aee367422d0858105abec186da4dff0a0c5/deps/uv/include/uv/win.h#L691
+exports.UV_FS_O_EXLOCK = 0x10000000;
+exports.READONLY = fs.constants.O_RDONLY;
 function exists(fsPath) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -5377,12 +5383,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.findInPath = exports.which = exports.mkdirP = exports.rmRF = exports.mv = exports.cp = void 0;
 const assert_1 = __nccwpck_require__(9491);
-const childProcess = __importStar(__nccwpck_require__(2081));
 const path = __importStar(__nccwpck_require__(1017));
-const util_1 = __nccwpck_require__(3837);
 const ioUtil = __importStar(__nccwpck_require__(1962));
-const exec = util_1.promisify(childProcess.exec);
-const execFile = util_1.promisify(childProcess.execFile);
 /**
  * Copies a file or folder.
  * Based off of shelljs - https://github.com/shelljs/shelljs/blob/9237f66c52e5daa40458f94f9565e18e8132f5a6/src/cp.js
@@ -5463,61 +5465,23 @@ exports.mv = mv;
 function rmRF(inputPath) {
     return __awaiter(this, void 0, void 0, function* () {
         if (ioUtil.IS_WINDOWS) {
-            // Node doesn't provide a delete operation, only an unlink function. This means that if the file is being used by another
-            // program (e.g. antivirus), it won't be deleted. To address this, we shell out the work to rd/del.
             // Check for invalid characters
             // https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file
             if (/[*"<>|]/.test(inputPath)) {
                 throw new Error('File path must not contain `*`, `"`, `<`, `>` or `|` on Windows');
             }
-            try {
-                const cmdPath = ioUtil.getCmdPath();
-                if (yield ioUtil.isDirectory(inputPath, true)) {
-                    yield exec(`${cmdPath} /s /c "rd /s /q "%inputPath%""`, {
-                        env: { inputPath }
-                    });
-                }
-                else {
-                    yield exec(`${cmdPath} /s /c "del /f /a "%inputPath%""`, {
-                        env: { inputPath }
-                    });
-                }
-            }
-            catch (err) {
-                // if you try to delete a file that doesn't exist, desired result is achieved
-                // other errors are valid
-                if (err.code !== 'ENOENT')
-                    throw err;
-            }
-            // Shelling out fails to remove a symlink folder with missing source, this unlink catches that
-            try {
-                yield ioUtil.unlink(inputPath);
-            }
-            catch (err) {
-                // if you try to delete a file that doesn't exist, desired result is achieved
-                // other errors are valid
-                if (err.code !== 'ENOENT')
-                    throw err;
-            }
         }
-        else {
-            let isDir = false;
-            try {
-                isDir = yield ioUtil.isDirectory(inputPath);
-            }
-            catch (err) {
-                // if you try to delete a file that doesn't exist, desired result is achieved
-                // other errors are valid
-                if (err.code !== 'ENOENT')
-                    throw err;
-                return;
-            }
-            if (isDir) {
-                yield execFile(`rm`, [`-rf`, `${inputPath}`]);
-            }
-            else {
-                yield ioUtil.unlink(inputPath);
-            }
+        try {
+            // note if path does not exist, error is silent
+            yield ioUtil.rm(inputPath, {
+                force: true,
+                maxRetries: 3,
+                recursive: true,
+                retryDelay: 300
+            });
+        }
+        catch (err) {
+            throw new Error(`File was unable to be removed ${err}`);
         }
     });
 }
@@ -15273,134 +15237,6 @@ module.exports["default"] = CacheableLookup;
 
 /***/ }),
 
-/***/ 4340:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-const {PassThrough: PassThroughStream} = __nccwpck_require__(2781);
-
-module.exports = options => {
-	options = {...options};
-
-	const {array} = options;
-	let {encoding} = options;
-	const isBuffer = encoding === 'buffer';
-	let objectMode = false;
-
-	if (array) {
-		objectMode = !(encoding || isBuffer);
-	} else {
-		encoding = encoding || 'utf8';
-	}
-
-	if (isBuffer) {
-		encoding = null;
-	}
-
-	const stream = new PassThroughStream({objectMode});
-
-	if (encoding) {
-		stream.setEncoding(encoding);
-	}
-
-	let length = 0;
-	const chunks = [];
-
-	stream.on('data', chunk => {
-		chunks.push(chunk);
-
-		if (objectMode) {
-			length = chunks.length;
-		} else {
-			length += chunk.length;
-		}
-	});
-
-	stream.getBufferedValue = () => {
-		if (array) {
-			return chunks;
-		}
-
-		return isBuffer ? Buffer.concat(chunks, length) : chunks.join('');
-	};
-
-	stream.getBufferedLength = () => length;
-
-	return stream;
-};
-
-
-/***/ }),
-
-/***/ 7040:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-const {constants: BufferConstants} = __nccwpck_require__(4300);
-const pump = __nccwpck_require__(8341);
-const bufferStream = __nccwpck_require__(4340);
-
-class MaxBufferError extends Error {
-	constructor() {
-		super('maxBuffer exceeded');
-		this.name = 'MaxBufferError';
-	}
-}
-
-async function getStream(inputStream, options) {
-	if (!inputStream) {
-		return Promise.reject(new Error('Expected a stream'));
-	}
-
-	options = {
-		maxBuffer: Infinity,
-		...options
-	};
-
-	const {maxBuffer} = options;
-
-	let stream;
-	await new Promise((resolve, reject) => {
-		const rejectPromise = error => {
-			// Don't retrieve an oversized buffer.
-			if (error && stream.getBufferedLength() <= BufferConstants.MAX_LENGTH) {
-				error.bufferedData = stream.getBufferedValue();
-			}
-
-			reject(error);
-		};
-
-		stream = pump(inputStream, bufferStream(options), error => {
-			if (error) {
-				rejectPromise(error);
-				return;
-			}
-
-			resolve();
-		});
-
-		stream.on('data', () => {
-			if (stream.getBufferedLength() > maxBuffer) {
-				rejectPromise(new MaxBufferError());
-			}
-		});
-	});
-
-	return stream.getBufferedValue();
-}
-
-module.exports = getStream;
-// TODO: Remove this for the next major release
-module.exports["default"] = getStream;
-module.exports.buffer = (stream, options) => getStream(stream, {...options, encoding: 'buffer'});
-module.exports.array = (stream, options) => getStream(stream, {...options, array: true});
-module.exports.MaxBufferError = MaxBufferError;
-
-
-/***/ }),
-
 /***/ 8116:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -15410,7 +15246,7 @@ module.exports.MaxBufferError = MaxBufferError;
 const EventEmitter = __nccwpck_require__(2361);
 const urlLib = __nccwpck_require__(7310);
 const normalizeUrl = __nccwpck_require__(7952);
-const getStream = __nccwpck_require__(7040);
+const getStream = __nccwpck_require__(1766);
 const CachePolicy = __nccwpck_require__(1002);
 const Response = __nccwpck_require__(9004);
 const lowercaseKeys = __nccwpck_require__(9662);
@@ -15681,85 +15517,6 @@ const cloneResponse = response => {
 };
 
 module.exports = cloneResponse;
-
-
-/***/ }),
-
-/***/ 5728:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-const { promisify } = __nccwpck_require__(3837)
-const JSONB = __nccwpck_require__(2820)
-const zlib = __nccwpck_require__(9796)
-
-const mergeOptions = __nccwpck_require__(4968)
-
-const compress = promisify(zlib.brotliCompress)
-
-const decompress = promisify(zlib.brotliDecompress)
-
-const identity = val => val
-
-const createCompress = ({
-  enable = true,
-  serialize = JSONB.stringify,
-  deserialize = JSONB.parse,
-  compressOptions,
-  decompressOptions
-} = {}) => {
-  if (!enable) {
-    return { serialize, deserialize, decompress: identity, compress: identity }
-  }
-
-  return {
-    serialize,
-    deserialize,
-    compress: async (data, options = {}) => {
-      if (data === undefined) return data
-      const serializedData = serialize(data)
-      return compress(serializedData, mergeOptions(compressOptions, options))
-    },
-    decompress: async (data, options = {}) => {
-      if (data === undefined) return data
-      return deserialize(
-        await decompress(data, mergeOptions(decompressOptions, options))
-      )
-    }
-  }
-}
-
-module.exports = createCompress
-module.exports.stringify = JSONB.stringify
-module.exports.parse = JSONB.parse
-
-
-/***/ }),
-
-/***/ 4968:
-/***/ ((module) => {
-
-"use strict";
-
-
-module.exports = (defaultOptions = {}, options = {}) => {
-  const params = {
-    ...(defaultOptions.params || {}),
-    ...(options.params || {})
-  }
-
-  return {
-    ...defaultOptions,
-    ...options,
-    ...(Object.keys(params).length
-      ? {
-          params
-        }
-      : {})
-  }
-}
 
 
 /***/ }),
@@ -17519,15 +17276,15 @@ exports.isEmpty = isEmpty;
 
 var reusify = __nccwpck_require__(2113)
 
-function fastqueue (context, worker, concurrency) {
+function fastqueue (context, worker, _concurrency) {
   if (typeof context === 'function') {
-    concurrency = worker
+    _concurrency = worker
     worker = context
     context = null
   }
 
-  if (concurrency < 1) {
-    throw new Error('fastqueue concurrency must be greater than 1')
+  if (!(_concurrency >= 1)) {
+    throw new Error('fastqueue concurrency must be equal to or greater than 1')
   }
 
   var cache = reusify(Task)
@@ -17542,7 +17299,23 @@ function fastqueue (context, worker, concurrency) {
     saturated: noop,
     pause: pause,
     paused: false,
-    concurrency: concurrency,
+
+    get concurrency () {
+      return _concurrency
+    },
+    set concurrency (value) {
+      if (!(value >= 1)) {
+        throw new Error('fastqueue concurrency must be equal to or greater than 1')
+      }
+      _concurrency = value
+
+      if (self.paused) return
+      for (; queueHead && _running < _concurrency;) {
+        _running++
+        release()
+      }
+    },
+
     running: running,
     resume: resume,
     idle: idle,
@@ -17592,7 +17365,12 @@ function fastqueue (context, worker, concurrency) {
   function resume () {
     if (!self.paused) return
     self.paused = false
-    for (var i = 0; i < self.concurrency; i++) {
+    if (queueHead === null) {
+      _running++
+      release()
+      return
+    }
+    for (; queueHead && _running < _concurrency;) {
       _running++
       release()
     }
@@ -17611,7 +17389,7 @@ function fastqueue (context, worker, concurrency) {
     current.callback = done || noop
     current.errorHandler = errorHandler
 
-    if (_running === self.concurrency || self.paused) {
+    if (_running >= _concurrency || self.paused) {
       if (queueTail) {
         queueTail.next = current
         queueTail = current
@@ -17633,8 +17411,9 @@ function fastqueue (context, worker, concurrency) {
     current.release = release
     current.value = value
     current.callback = done || noop
+    current.errorHandler = errorHandler
 
-    if (_running === self.concurrency || self.paused) {
+    if (_running >= _concurrency || self.paused) {
       if (queueHead) {
         current.next = queueHead
         queueHead = current
@@ -17654,7 +17433,7 @@ function fastqueue (context, worker, concurrency) {
       cache.release(holder)
     }
     var next = queueHead
-    if (next) {
+    if (next && _running <= _concurrency) {
       if (!self.paused) {
         if (queueTail === queueHead) {
           queueTail = null
@@ -17717,9 +17496,9 @@ function Task () {
   }
 }
 
-function queueAsPromised (context, worker, concurrency) {
+function queueAsPromised (context, worker, _concurrency) {
   if (typeof context === 'function') {
-    concurrency = worker
+    _concurrency = worker
     worker = context
     context = null
   }
@@ -17731,7 +17510,7 @@ function queueAsPromised (context, worker, concurrency) {
       }, cb)
   }
 
-  var queue = fastqueue(context, asyncWrapper, concurrency)
+  var queue = fastqueue(context, asyncWrapper, _concurrency)
 
   var pushCb = queue.push
   var unshiftCb = queue.unshift
@@ -17781,6 +17560,12 @@ function queueAsPromised (context, worker, concurrency) {
   }
 
   function drained () {
+    if (queue.idle()) {
+      return new Promise(function (resolve) {
+        resolve()
+      })
+    }
+
     var previousDrain = queue.drain
 
     var p = new Promise(function (resolve) {
@@ -18057,6 +17842,134 @@ module.exports = fill;
 
 /***/ }),
 
+/***/ 1585:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+const {PassThrough: PassThroughStream} = __nccwpck_require__(2781);
+
+module.exports = options => {
+	options = {...options};
+
+	const {array} = options;
+	let {encoding} = options;
+	const isBuffer = encoding === 'buffer';
+	let objectMode = false;
+
+	if (array) {
+		objectMode = !(encoding || isBuffer);
+	} else {
+		encoding = encoding || 'utf8';
+	}
+
+	if (isBuffer) {
+		encoding = null;
+	}
+
+	const stream = new PassThroughStream({objectMode});
+
+	if (encoding) {
+		stream.setEncoding(encoding);
+	}
+
+	let length = 0;
+	const chunks = [];
+
+	stream.on('data', chunk => {
+		chunks.push(chunk);
+
+		if (objectMode) {
+			length = chunks.length;
+		} else {
+			length += chunk.length;
+		}
+	});
+
+	stream.getBufferedValue = () => {
+		if (array) {
+			return chunks;
+		}
+
+		return isBuffer ? Buffer.concat(chunks, length) : chunks.join('');
+	};
+
+	stream.getBufferedLength = () => length;
+
+	return stream;
+};
+
+
+/***/ }),
+
+/***/ 1766:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+const {constants: BufferConstants} = __nccwpck_require__(4300);
+const pump = __nccwpck_require__(8341);
+const bufferStream = __nccwpck_require__(1585);
+
+class MaxBufferError extends Error {
+	constructor() {
+		super('maxBuffer exceeded');
+		this.name = 'MaxBufferError';
+	}
+}
+
+async function getStream(inputStream, options) {
+	if (!inputStream) {
+		return Promise.reject(new Error('Expected a stream'));
+	}
+
+	options = {
+		maxBuffer: Infinity,
+		...options
+	};
+
+	const {maxBuffer} = options;
+
+	let stream;
+	await new Promise((resolve, reject) => {
+		const rejectPromise = error => {
+			// Don't retrieve an oversized buffer.
+			if (error && stream.getBufferedLength() <= BufferConstants.MAX_LENGTH) {
+				error.bufferedData = stream.getBufferedValue();
+			}
+
+			reject(error);
+		};
+
+		stream = pump(inputStream, bufferStream(options), error => {
+			if (error) {
+				rejectPromise(error);
+				return;
+			}
+
+			resolve();
+		});
+
+		stream.on('data', () => {
+			if (stream.getBufferedLength() > maxBuffer) {
+				rejectPromise(new MaxBufferError());
+			}
+		});
+	});
+
+	return stream.getBufferedValue();
+}
+
+module.exports = getStream;
+// TODO: Remove this for the next major release
+module.exports["default"] = getStream;
+module.exports.buffer = (stream, options) => getStream(stream, {...options, encoding: 'buffer'});
+module.exports.array = (stream, options) => getStream(stream, {...options, array: true});
+module.exports.MaxBufferError = MaxBufferError;
+
+
+/***/ }),
+
 /***/ 6457:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -18219,6 +18132,7 @@ function asPromise(normalizedOptions) {
                     request._beforeError(new types_1.HTTPError(response));
                     return;
                 }
+                request.destroy();
                 resolve(request.options.resolveBodyOnly ? response.body : response);
             });
             const onError = (error) => {
@@ -23379,7 +23293,6 @@ exports.parse = function (s) {
 
 const EventEmitter = __nccwpck_require__(2361);
 const JSONB = __nccwpck_require__(2820);
-const compressBrotli = __nccwpck_require__(5728);
 
 const loadStore = options => {
 	const adapters = {
@@ -23428,13 +23341,10 @@ class Keyv extends EventEmitter {
 			this.opts.store = loadStore(adapterOptions);
 		}
 
-		if (this.opts.compress) {
-			const brotli = compressBrotli(this.opts.compress.opts);
-			this.opts.serialize = async ({value, expires}) => brotli.serialize({value: await brotli.compress(value), expires});
-			this.opts.deserialize = async data => {
-				const {value, expires} = brotli.deserialize(data);
-				return {value: await brotli.decompress(value), expires};
-			};
+		if (this.opts.compression) {
+			const compression = this.opts.compression;
+			this.opts.serialize = compression.serialize.bind(compression);
+			this.opts.deserialize = compression.deserialize.bind(compression);
 		}
 
 		if (typeof this.opts.store.on === 'function' && emitErrors) {
@@ -23447,7 +23357,7 @@ class Keyv extends EventEmitter {
 			for await (const [key, raw] of typeof iterator === 'function'
 				? iterator(this.opts.store.namespace)
 				: iterator) {
-				const data = this.opts.deserialize(raw);
+				const data = await this.opts.deserialize(raw);
 				if (this.opts.store.namespace && !key.includes(this.opts.store.namespace)) {
 					continue;
 				}
@@ -23499,7 +23409,7 @@ class Keyv extends EventEmitter {
 			for (const key of keyPrefixed) {
 				promises.push(Promise.resolve()
 					.then(() => store.get(key))
-					.then(data => (typeof data === 'string') ? this.opts.deserialize(data) : data)
+					.then(data => (typeof data === 'string') ? this.opts.deserialize(data) : (this.opts.compression ? this.opts.deserialize(data) : data))
 					.then(data => {
 						if (data === undefined || data === null) {
 							return undefined;
@@ -23521,44 +23431,35 @@ class Keyv extends EventEmitter {
 						data.push(value.value);
 					}
 
-					return data.every(x => x === undefined) ? [] : data;
+					return data;
 				});
 		}
 
 		return Promise.resolve()
 			.then(() => isArray ? store.getMany(keyPrefixed) : store.get(keyPrefixed))
-			.then(data => (typeof data === 'string') ? this.opts.deserialize(data) : data)
+			.then(data => (typeof data === 'string') ? this.opts.deserialize(data) : (this.opts.compression ? this.opts.deserialize(data) : data))
 			.then(data => {
 				if (data === undefined || data === null) {
 					return undefined;
 				}
 
 				if (isArray) {
-					const result = [];
-
-					if (data.length === 0) {
-						return [];
-					}
-
-					for (let row of data) {
+					return data.map((row, index) => {
 						if ((typeof row === 'string')) {
 							row = this.opts.deserialize(row);
 						}
 
 						if (row === undefined || row === null) {
-							result.push(undefined);
-							continue;
+							return undefined;
 						}
 
 						if (typeof row.expires === 'number' && Date.now() > row.expires) {
-							this.delete(key).then(() => undefined);
-							result.push(undefined);
-						} else {
-							result.push((options && options.raw) ? row : row.value);
+							this.delete(key[index]).then(() => undefined);
+							return undefined;
 						}
-					}
 
-					return result.every(x => x === undefined) ? [] : result;
+						return (options && options.raw) ? row : row.value;
+					});
 				}
 
 				if (typeof data.expires === 'number' && Date.now() > data.expires) {
@@ -29586,6 +29487,7 @@ function runParallel (tasks, cb) {
   } catch (ex) {
     Stream = function () {}
   }
+  if (!Stream) Stream = function () {}
 
   var streamWraps = sax.EVENTS.filter(function (ev) {
     return ev !== 'error' && ev !== 'end'
@@ -30904,9 +30806,16 @@ function runParallel (tasks, cb) {
           }
 
           if (c === ';') {
-            parser[buffer] += parseEntity(parser)
-            parser.entity = ''
-            parser.state = returnState
+            if (parser.opt.unparsedEntities) {
+              var parsedEntity = parseEntity(parser)
+              parser.entity = ''
+              parser.state = returnState
+              parser.write(parsedEntity)
+            } else {
+              parser[buffer] += parseEntity(parser)
+              parser.entity = ''
+              parser.state = returnState
+            }
           } else if (isMatch(parser.entity.length ? entityBody : entityStart, c)) {
             parser.entity += c
           } else {
@@ -30918,8 +30827,9 @@ function runParallel (tasks, cb) {
 
           continue
 
-        default:
+        default: /* istanbul ignore next */ {
           throw new Error(parser, 'Unknown state: ' + parser.state)
+        }
       }
     } // while
 
