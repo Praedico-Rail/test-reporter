@@ -16,6 +16,7 @@ import {DotnetTrxParser} from './parsers/dotnet-trx/dotnet-trx-parser'
 import {JavaJunitParser} from './parsers/java-junit/java-junit-parser'
 import {JestJunitParser} from './parsers/jest-junit/jest-junit-parser'
 import {MochaJsonParser} from './parsers/mocha-json/mocha-json-parser'
+import {SwiftXunitParser} from './parsers/swift-xunit/swift-xunit-parser'
 
 import {normalizeDirPath, normalizeFilePath} from './utils/path-utils'
 import {getCheckRunContext} from './utils/github-utils'
@@ -50,6 +51,7 @@ class TestReporter {
   readonly listTests = core.getInput('list-tests', {required: true}) as 'all' | 'failed' | 'none'
   readonly maxAnnotations = parseInt(core.getInput('max-annotations', {required: true}))
   readonly failOnError = core.getInput('fail-on-error', {required: true}) === 'true'
+  readonly failOnEmpty = core.getInput('fail-on-empty', {required: true}) === 'true'
   readonly workDirInput = core.getInput('working-directory', {required: false})
   readonly buildDirInput = core.getInput('build-directory', {required: false})
   readonly onlySummary = core.getInput('only-summary', {required: false}) === 'true'
@@ -153,7 +155,7 @@ class TestReporter {
       return
     }
 
-    if (results.length === 0) {
+    if (results.length === 0 && this.failOnEmpty) {
       core.setFailed(`No test report files were found`)
       return
     }
@@ -245,6 +247,8 @@ class TestReporter {
         return new JestJunitParser(options)
       case 'mocha-json':
         return new MochaJsonParser(options)
+      case 'swift-xunit':
+        return new SwiftXunitParser(options)
       default:
         throw new Error(`Input variable 'reporter' is set to invalid value '${reporter}'`)
     }
