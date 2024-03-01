@@ -168,11 +168,11 @@ export class DotnetTrxParser implements TestParser {
     const lines = stackTrace.split(/\r*\n/)
     const re = / in (.+):line (\d+)$/
     const {trackedFiles} = this.options
+
     for (const str of lines) {
       const match = str.match(re)
       if (match !== null) {
         const [_, fileStr, lineStr] = match
-
         const filePath = normalizeFilePath(fileStr)
         const workDir = this.getWorkDir(filePath)
         if (workDir) {
