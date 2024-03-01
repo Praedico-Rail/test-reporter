@@ -236,6 +236,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
+const crypto_1 = __nccwpck_require__(6113);
 const artifact_provider_1 = __nccwpck_require__(7171);
 const local_file_provider_1 = __nccwpck_require__(9399);
 const get_annotations_1 = __nccwpck_require__(5867);
@@ -262,6 +263,15 @@ async function main() {
             core.setFailed(JSON.stringify(error));
     }
 }
+function createSlugPrefix() {
+    const step_summary = process.env['GITHUB_STEP_SUMMARY'];
+    if (!step_summary || step_summary === '') {
+        return '';
+    }
+    const hash = (0, crypto_1.createHash)('sha1');
+    hash.update(step_summary);
+    return hash.digest('hex').substring(0, 8);
+}
 class TestReporter {
     artifact = core.getInput('artifact', { required: false });
     name = core.getInput('name', { required: true });
@@ -274,10 +284,11 @@ class TestReporter {
     failOnError = core.getInput('fail-on-error', { required: true }) === 'true';
     failOnEmpty = core.getInput('fail-on-empty', { required: true }) === 'true';
     workDirInput = core.getInput('working-directory', { required: false });
+    buildDirInput = core.getInput('build-directory', { required: false });
     onlySummary = core.getInput('only-summary', { required: false }) === 'true';
-    useActionsSummary = core.getInput('use-actions-summary', { required: false }) === 'true';
     badgeTitle = core.getInput('badge-title', { required: false });
     token = core.getInput('token', { required: true });
+    slugPrefix = '';
     octokit;
     context = (0, github_utils_1.getCheckRunContext)();
     constructor() {
@@ -294,6 +305,7 @@ class TestReporter {
             core.setFailed(`Input parameter 'max-annotations' has invalid value`);
             return;
         }
+        this.slugPrefix = createSlugPrefix();
     }
     async run() {
         if (this.workDirInput) {
@@ -310,7 +322,11 @@ class TestReporter {
             : new local_file_provider_1.LocalFileProvider(this.name, pattern);
         const parseErrors = this.maxAnnotations > 0;
         const trackedFiles = parseErrors ? await inputProvider.listTrackedFiles() : [];
-        const workDir = this.artifact ? undefined : (0, path_utils_1.normalizeDirPath)(process.cwd(), true);
+        const workDir = this.buildDirInput
+            ? (0, path_utils_1.normalizeDirPath)(this.buildDirInput, true)
+            : this.artifact
+                ? undefined
+                : (0, path_utils_1.normalizeDirPath)(process.cwd(), true);
         if (parseErrors)
             core.info(`Found ${trackedFiles.length} files tracked by GitHub`);
         const options = {
@@ -369,54 +385,46 @@ class TestReporter {
                 throw error;
             }
         }
-        const { listSuites, listTests, onlySummary, useActionsSummary, badgeTitle } = this;
-        let baseUrl = '';
-        if (this.useActionsSummary) {
-            const summary = (0, get_report_1.getReport)(results, { listSuites, listTests, baseUrl, onlySummary, useActionsSummary, badgeTitle });
-            core.info('Summary content:');
-            core.info(summary);
-            await core.summary.addRaw(summary).write();
-        }
-        else {
-            core.info(`Creating check run ${name}`);
-            const createResp = await this.octokit.rest.checks.create({
-                head_sha: this.context.sha,
-                name,
-                status: 'in_progress',
-                output: {
-                    title: name,
-                    summary: ''
-                },
-                ...github.context.repo
+        const run_attempt = process.env['GITHUB_RUN_ATTEMPT'] ?? 1;
+        const baseUrl = `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}/attempts/${run_attempt}`;
+        core.info('Creating report summary');
+        const { listSuites, listTests, onlySummary, badgeTitle, slugPrefix } = this;
+        const summary = (0, get_report_1.getReport)(results, { listSuites, listTests, baseUrl, onlySummary, badgeTitle, slugPrefix });
+        core.info('Creating annotations');
+        const annotations = (0, get_annotations_1.getAnnotations)(results, this.maxAnnotations);
+        const isFailed = this.failOnError && results.some(tr => tr.result === 'failed');
+        const conclusion = isFailed ? 'failure' : 'success';
+        const passed = results.reduce((sum, tr) => sum + tr.passed, 0);
+        const failed = results.reduce((sum, tr) => sum + tr.failed, 0);
+        const skipped = results.reduce((sum, tr) => sum + tr.skipped, 0);
+        const shortSummary = `${passed} passed, ${failed} failed and ${skipped} skipped `;
+        core.info(`Updating check run conclusion (${conclusion}) and output`);
+        core.summary.addRaw(`# ${shortSummary}`);
+        core.summary.addRaw(summary);
+        await core.summary.write();
+        for (const annotation of annotations) {
+            let fn;
+            switch (annotation.annotation_level) {
+                case 'failure':
+                    fn = core.error;
+                    break;
+                case 'warning':
+                    fn = core.warning;
+                    break;
+                case 'notice':
+                    fn = core.notice;
+                    break;
+                default:
+                    continue;
+            }
+            fn(annotation.message, {
+                title: annotation.title,
+                file: annotation.path,
+                startLine: annotation.start_line,
+                endLine: annotation.end_line,
+                startColumn: annotation.start_column,
+                endColumn: annotation.end_column
             });
-            core.info('Creating report summary');
-            baseUrl = createResp.data.html_url;
-            const summary = (0, get_report_1.getReport)(results, { listSuites, listTests, baseUrl, onlySummary, useActionsSummary, badgeTitle });
-            core.info('Creating annotations');
-            const annotations = (0, get_annotations_1.getAnnotations)(results, this.maxAnnotations);
-            const isFailed = this.failOnError && results.some(tr => tr.result === 'failed');
-            const conclusion = isFailed ? 'failure' : 'success';
-            const passed = results.reduce((sum, tr) => sum + tr.passed, 0);
-            const failed = results.reduce((sum, tr) => sum + tr.failed, 0);
-            const skipped = results.reduce((sum, tr) => sum + tr.skipped, 0);
-            const shortSummary = `${passed} passed, ${failed} failed and ${skipped} skipped `;
-            core.info(`Updating check run conclusion (${conclusion}) and output`);
-            const resp = await this.octokit.rest.checks.update({
-                check_run_id: createResp.data.id,
-                conclusion,
-                status: 'completed',
-                output: {
-                    title: shortSummary,
-                    summary,
-                    annotations
-                },
-                ...github.context.repo
-            });
-            core.info(`Check run create response: ${resp.status}`);
-            core.info(`Check run URL: ${resp.data.url}`);
-            core.info(`Check run HTML: ${resp.data.html_url}`);
-            core.setOutput('url', resp.data.url);
-            core.setOutput('url_html', resp.data.html_url);
         }
         return results;
     }
@@ -1741,14 +1749,13 @@ const markdown_utils_1 = __nccwpck_require__(6482);
 const node_utils_1 = __nccwpck_require__(5824);
 const parse_utils_1 = __nccwpck_require__(7811);
 const slugger_1 = __nccwpck_require__(3328);
-const MAX_REPORT_LENGTH = 65535;
-const MAX_ACTIONS_SUMMARY_LENGTH = 131072; // 1048576 soon
+const MAX_REPORT_LENGTH = 1048576;
 const defaultOptions = {
     listSuites: 'all',
     listTests: 'all',
+    slugPrefix: '',
     baseUrl: '',
     onlySummary: false,
-    useActionsSummary: true,
     badgeTitle: 'tests'
 };
 function getReport(results, options = defaultOptions) {
@@ -1757,7 +1764,7 @@ function getReport(results, options = defaultOptions) {
     const opts = { ...options };
     let lines = renderReport(results, opts);
     let report = lines.join('\n');
-    if (getByteLength(report) <= getMaxReportLength(options)) {
+    if (getByteLength(report) <= MAX_REPORT_LENGTH) {
         return report;
     }
     if (opts.listTests === 'all') {
@@ -1765,21 +1772,18 @@ function getReport(results, options = defaultOptions) {
         opts.listTests = 'failed';
         lines = renderReport(results, opts);
         report = lines.join('\n');
-        if (getByteLength(report) <= getMaxReportLength(options)) {
+        if (getByteLength(report) <= MAX_REPORT_LENGTH) {
             return report;
         }
     }
-    core.warning(`Test report summary exceeded limit of ${getMaxReportLength(options)} bytes and will be trimmed`);
-    return trimReport(lines, options);
+    core.warning(`Test report summary exceeded limit of ${MAX_REPORT_LENGTH} bytes and will be trimmed`);
+    return trimReport(lines);
 }
-function getMaxReportLength(options = defaultOptions) {
-    return options.useActionsSummary ? MAX_ACTIONS_SUMMARY_LENGTH : MAX_REPORT_LENGTH;
-}
-function trimReport(lines, options) {
+function trimReport(lines) {
     const closingBlock = '```';
-    const errorMsg = `**Report exceeded GitHub limit of ${getMaxReportLength(options)} bytes and has been trimmed**`;
+    const errorMsg = `**Report exceeded GitHub limit of ${MAX_REPORT_LENGTH} bytes and has been trimmed**`;
     const maxErrorMsgLength = closingBlock.length + errorMsg.length + 2;
-    const maxReportLength = getMaxReportLength(options) - maxErrorMsgLength;
+    const maxReportLength = MAX_REPORT_LENGTH - maxErrorMsgLength;
     let reportLength = 0;
     let codeBlock = false;
     let endLineIndex = 0;
@@ -1860,10 +1864,11 @@ function getTestRunsReport(testRuns, options) {
             .map(tr => {
             const time = (0, markdown_utils_1.formatTime)(tr.time);
             const name = tr.path;
-            const passed = tr.passed > 0 ? `${tr.passed} ${markdown_utils_1.Icon.success}` : '';
-            const failed = tr.failed > 0 ? `${tr.failed} ${markdown_utils_1.Icon.fail}` : '';
-            const skipped = tr.skipped > 0 ? `${tr.skipped} ${markdown_utils_1.Icon.skip}` : '';
-            return [name, passed, failed, skipped, time];
+            const statusIcon = tr.failed > 0 ? markdown_utils_1.Icon.fail : tr.passed > 0 ? markdown_utils_1.Icon.success : markdown_utils_1.Icon.skip;
+            const passed = tr.passed === 0 ? '' : tr.passed;
+            const failed = tr.failed === 0 ? '' : tr.failed;
+            const skipped = tr.skipped === 0 ? '' : tr.skipped;
+            return [statusIcon + ' ' + name, passed, failed, skipped, time];
         });
         const resultsTable = (0, markdown_utils_1.table)(['Report', 'Passed', 'Failed', 'Skipped', 'Time'], [markdown_utils_1.Align.Left, markdown_utils_1.Align.Right, markdown_utils_1.Align.Right, markdown_utils_1.Align.Right, markdown_utils_1.Align.Right], ...tableData);
         sections.push(resultsTable);
@@ -1881,7 +1886,7 @@ function getSuitesReport(tr, runIndex, options) {
     const sections = [];
     const suites = options.listSuites === 'failed' ? tr.failedSuites : tr.suites;
     if (options.listSuites !== 'none') {
-        const trSlug = makeRunSlug(runIndex);
+        const trSlug = makeRunSlug(runIndex, options.slugPrefix);
         const nameLink = `<a id="${trSlug.id}" href="${options.baseUrl + trSlug.link}">${tr.path}</a>`;
         const icon = getResultIcon(tr.result);
         sections.push(`## ${icon}\xa0${nameLink}`);
@@ -1895,12 +1900,13 @@ function getSuitesReport(tr, runIndex, options) {
                 const tsTime = (0, markdown_utils_1.formatTime)(s.time);
                 const tsName = s.name;
                 const skipLink = options.listTests === 'none' || (options.listTests === 'failed' && s.result !== 'failed');
-                const tsAddr = options.baseUrl + makeSuiteSlug(runIndex, suiteIndex).link;
+                const tsAddr = options.baseUrl + makeSuiteSlug(runIndex, suiteIndex, options.slugPrefix).link;
                 const tsNameLink = skipLink ? tsName : (0, markdown_utils_1.link)(tsName, tsAddr);
-                const passed = s.passed > 0 ? `${s.passed} ${markdown_utils_1.Icon.success}` : '';
-                const failed = s.failed > 0 ? `${s.failed} ${markdown_utils_1.Icon.fail}` : '';
-                const skipped = s.skipped > 0 ? `${s.skipped} ${markdown_utils_1.Icon.skip}` : '';
-                return [tsNameLink, passed, failed, skipped, tsTime];
+                const statusIcon = s.failed > 0 ? markdown_utils_1.Icon.fail : s.passed > 0 ? markdown_utils_1.Icon.success : markdown_utils_1.Icon.skip;
+                const passed = s.passed === 0 ? '' : s.passed;
+                const failed = s.failed === 0 ? '' : s.failed;
+                const skipped = s.skipped === 0 ? '' : s.skipped;
+                return [statusIcon + ' ' + tsNameLink, passed, failed, skipped, tsTime];
             }));
             sections.push(suitesTable);
         }
@@ -1923,7 +1929,7 @@ function getTestsReport(ts, runIndex, suiteIndex, options) {
     }
     const sections = [];
     const tsName = ts.name;
-    const tsSlug = makeSuiteSlug(runIndex, suiteIndex);
+    const tsSlug = makeSuiteSlug(runIndex, suiteIndex, options.slugPrefix);
     const tsNameLink = `<a id="${tsSlug.id}" href="${options.baseUrl + tsSlug.link}">${tsName}</a>`;
     const icon = getResultIcon(ts.result);
     sections.push(`### ${icon}\xa0${tsNameLink}`);
@@ -1949,13 +1955,13 @@ function getTestsReport(ts, runIndex, suiteIndex, options) {
     sections.push('```');
     return sections;
 }
-function makeRunSlug(runIndex) {
+function makeRunSlug(runIndex, slugPrefix) {
     // use prefix to avoid slug conflicts after escaping the paths
-    return (0, slugger_1.slug)(`r${runIndex}`);
+    return (0, slugger_1.slug)(`r${slugPrefix}${runIndex}`);
 }
-function makeSuiteSlug(runIndex, suiteIndex) {
+function makeSuiteSlug(runIndex, suiteIndex, slugPrefix) {
     // use prefix to avoid slug conflicts after escaping the paths
-    return (0, slugger_1.slug)(`r${runIndex}s${suiteIndex}`);
+    return (0, slugger_1.slug)(`r${slugPrefix}${runIndex}s${suiteIndex}`);
 }
 function getResultIcon(result) {
     switch (result) {
@@ -2319,8 +2325,8 @@ var Align;
 })(Align || (exports.Align = Align = {}));
 exports.Icon = {
     skip: '⚪', // ':white_circle:'
-    success: '✅', // ':white_check_mark:'
-    fail: '❌' // ':x:'
+    success: '🟢', // ':green_circle:'
+    fail: '🔴' // ':red_circle:'
 };
 function link(title, address) {
     return `[${title}](${address})`;
@@ -6848,7 +6854,7 @@ var import_graphql = __nccwpck_require__(8467);
 var import_auth_token = __nccwpck_require__(334);
 
 // pkg/dist-src/version.js
-var VERSION = "5.0.2";
+var VERSION = "5.1.0";
 
 // pkg/dist-src/index.js
 var noop = () => {
@@ -7557,7 +7563,7 @@ __export(dist_src_exports, {
 module.exports = __toCommonJS(dist_src_exports);
 
 // pkg/dist-src/version.js
-var VERSION = "9.1.5";
+var VERSION = "9.2.1";
 
 // pkg/dist-src/normalize-paginated-list-response.js
 function normalizePaginatedListResponse(response) {
@@ -7718,6 +7724,8 @@ var paginatingEndpoints = [
   "GET /orgs/{org}/members/{username}/codespaces",
   "GET /orgs/{org}/migrations",
   "GET /orgs/{org}/migrations/{migration_id}/repositories",
+  "GET /orgs/{org}/organization-roles/{role_id}/teams",
+  "GET /orgs/{org}/organization-roles/{role_id}/users",
   "GET /orgs/{org}/outside_collaborators",
   "GET /orgs/{org}/packages",
   "GET /orgs/{org}/packages/{package_type}/{package_name}/versions",
@@ -7954,7 +7962,7 @@ __export(dist_src_exports, {
 module.exports = __toCommonJS(dist_src_exports);
 
 // pkg/dist-src/version.js
-var VERSION = "10.2.0";
+var VERSION = "10.4.0";
 
 // pkg/dist-src/generated/endpoints.js
 var Endpoints = {
@@ -8081,6 +8089,9 @@ var Endpoints = {
       "GET /repos/{owner}/{repo}/actions/permissions/selected-actions"
     ],
     getArtifact: ["GET /repos/{owner}/{repo}/actions/artifacts/{artifact_id}"],
+    getCustomOidcSubClaimForRepo: [
+      "GET /repos/{owner}/{repo}/actions/oidc/customization/sub"
+    ],
     getEnvironmentPublicKey: [
       "GET /repositories/{repository_id}/environments/{environment_name}/secrets/public-key"
     ],
@@ -8233,6 +8244,9 @@ var Endpoints = {
     setCustomLabelsForSelfHostedRunnerForRepo: [
       "PUT /repos/{owner}/{repo}/actions/runners/{runner_id}/labels"
     ],
+    setCustomOidcSubClaimForRepo: [
+      "PUT /repos/{owner}/{repo}/actions/oidc/customization/sub"
+    ],
     setGithubActionsDefaultWorkflowPermissionsOrganization: [
       "PUT /orgs/{org}/actions/permissions/workflow"
     ],
@@ -8302,6 +8316,7 @@ var Endpoints = {
     listWatchersForRepo: ["GET /repos/{owner}/{repo}/subscribers"],
     markNotificationsAsRead: ["PUT /notifications"],
     markRepoNotificationsAsRead: ["PUT /repos/{owner}/{repo}/notifications"],
+    markThreadAsDone: ["DELETE /notifications/threads/{thread_id}"],
     markThreadAsRead: ["PATCH /notifications/threads/{thread_id}"],
     setRepoSubscription: ["PUT /repos/{owner}/{repo}/subscription"],
     setThreadSubscription: [
@@ -8578,10 +8593,10 @@ var Endpoints = {
     updateForAuthenticatedUser: ["PATCH /user/codespaces/{codespace_name}"]
   },
   copilot: {
-    addCopilotForBusinessSeatsForTeams: [
+    addCopilotSeatsForTeams: [
       "POST /orgs/{org}/copilot/billing/selected_teams"
     ],
-    addCopilotForBusinessSeatsForUsers: [
+    addCopilotSeatsForUsers: [
       "POST /orgs/{org}/copilot/billing/selected_users"
     ],
     cancelCopilotSeatAssignmentForTeams: [
@@ -8894,9 +8909,23 @@ var Endpoints = {
       }
     ]
   },
+  oidc: {
+    getOidcCustomSubTemplateForOrg: [
+      "GET /orgs/{org}/actions/oidc/customization/sub"
+    ],
+    updateOidcCustomSubTemplateForOrg: [
+      "PUT /orgs/{org}/actions/oidc/customization/sub"
+    ]
+  },
   orgs: {
     addSecurityManagerTeam: [
       "PUT /orgs/{org}/security-managers/teams/{team_slug}"
+    ],
+    assignTeamToOrgRole: [
+      "PUT /orgs/{org}/organization-roles/teams/{team_slug}/{role_id}"
+    ],
+    assignUserToOrgRole: [
+      "PUT /orgs/{org}/organization-roles/users/{username}/{role_id}"
     ],
     blockUser: ["PUT /orgs/{org}/blocks/{username}"],
     cancelInvitation: ["DELETE /orgs/{org}/invitations/{invitation_id}"],
@@ -8906,6 +8935,7 @@ var Endpoints = {
     convertMemberToOutsideCollaborator: [
       "PUT /orgs/{org}/outside_collaborators/{username}"
     ],
+    createCustomOrganizationRole: ["POST /orgs/{org}/organization-roles"],
     createInvitation: ["POST /orgs/{org}/invitations"],
     createOrUpdateCustomProperties: ["PATCH /orgs/{org}/properties/schema"],
     createOrUpdateCustomPropertiesValuesForRepos: [
@@ -8916,6 +8946,9 @@ var Endpoints = {
     ],
     createWebhook: ["POST /orgs/{org}/hooks"],
     delete: ["DELETE /orgs/{org}"],
+    deleteCustomOrganizationRole: [
+      "DELETE /orgs/{org}/organization-roles/{role_id}"
+    ],
     deleteWebhook: ["DELETE /orgs/{org}/hooks/{hook_id}"],
     enableOrDisableSecurityProductOnAllOrgRepos: [
       "POST /orgs/{org}/{security_product}/{enablement}"
@@ -8927,6 +8960,7 @@ var Endpoints = {
     ],
     getMembershipForAuthenticatedUser: ["GET /user/memberships/orgs/{org}"],
     getMembershipForUser: ["GET /orgs/{org}/memberships/{username}"],
+    getOrgRole: ["GET /orgs/{org}/organization-roles/{role_id}"],
     getWebhook: ["GET /orgs/{org}/hooks/{hook_id}"],
     getWebhookConfigForOrg: ["GET /orgs/{org}/hooks/{hook_id}/config"],
     getWebhookDelivery: [
@@ -8942,6 +8976,12 @@ var Endpoints = {
     listInvitationTeams: ["GET /orgs/{org}/invitations/{invitation_id}/teams"],
     listMembers: ["GET /orgs/{org}/members"],
     listMembershipsForAuthenticatedUser: ["GET /user/memberships/orgs"],
+    listOrgRoleTeams: ["GET /orgs/{org}/organization-roles/{role_id}/teams"],
+    listOrgRoleUsers: ["GET /orgs/{org}/organization-roles/{role_id}/users"],
+    listOrgRoles: ["GET /orgs/{org}/organization-roles"],
+    listOrganizationFineGrainedPermissions: [
+      "GET /orgs/{org}/organization-fine-grained-permissions"
+    ],
     listOutsideCollaborators: ["GET /orgs/{org}/outside_collaborators"],
     listPatGrantRepositories: [
       "GET /orgs/{org}/personal-access-tokens/{pat_id}/repositories"
@@ -8956,6 +8996,9 @@ var Endpoints = {
     listSecurityManagerTeams: ["GET /orgs/{org}/security-managers"],
     listWebhookDeliveries: ["GET /orgs/{org}/hooks/{hook_id}/deliveries"],
     listWebhooks: ["GET /orgs/{org}/hooks"],
+    patchCustomOrganizationRole: [
+      "PATCH /orgs/{org}/organization-roles/{role_id}"
+    ],
     pingWebhook: ["POST /orgs/{org}/hooks/{hook_id}/pings"],
     redeliverWebhookDelivery: [
       "POST /orgs/{org}/hooks/{hook_id}/deliveries/{delivery_id}/attempts"
@@ -8979,6 +9022,18 @@ var Endpoints = {
     ],
     reviewPatGrantRequestsInBulk: [
       "POST /orgs/{org}/personal-access-token-requests"
+    ],
+    revokeAllOrgRolesTeam: [
+      "DELETE /orgs/{org}/organization-roles/teams/{team_slug}"
+    ],
+    revokeAllOrgRolesUser: [
+      "DELETE /orgs/{org}/organization-roles/users/{username}"
+    ],
+    revokeOrgRoleTeam: [
+      "DELETE /orgs/{org}/organization-roles/teams/{team_slug}/{role_id}"
+    ],
+    revokeOrgRoleUser: [
+      "DELETE /orgs/{org}/organization-roles/users/{username}/{role_id}"
     ],
     setMembershipForUser: ["PUT /orgs/{org}/memberships/{username}"],
     setPublicMembershipForAuthenticatedUser: [
@@ -9270,6 +9325,9 @@ var Endpoints = {
       {},
       { mapToData: "users" }
     ],
+    cancelPagesDeployment: [
+      "POST /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}/cancel"
+    ],
     checkAutomatedSecurityFixes: [
       "GET /repos/{owner}/{repo}/automated-security-fixes"
     ],
@@ -9305,12 +9363,15 @@ var Endpoints = {
     createForAuthenticatedUser: ["POST /user/repos"],
     createFork: ["POST /repos/{owner}/{repo}/forks"],
     createInOrg: ["POST /orgs/{org}/repos"],
+    createOrUpdateCustomPropertiesValues: [
+      "PATCH /repos/{owner}/{repo}/properties/values"
+    ],
     createOrUpdateEnvironment: [
       "PUT /repos/{owner}/{repo}/environments/{environment_name}"
     ],
     createOrUpdateFileContents: ["PUT /repos/{owner}/{repo}/contents/{path}"],
     createOrgRuleset: ["POST /orgs/{org}/rulesets"],
-    createPagesDeployment: ["POST /repos/{owner}/{repo}/pages/deployment"],
+    createPagesDeployment: ["POST /repos/{owner}/{repo}/pages/deployments"],
     createPagesSite: ["POST /repos/{owner}/{repo}/pages"],
     createRelease: ["POST /repos/{owner}/{repo}/releases"],
     createRepoRuleset: ["POST /repos/{owner}/{repo}/rulesets"],
@@ -9463,6 +9524,9 @@ var Endpoints = {
     getOrgRulesets: ["GET /orgs/{org}/rulesets"],
     getPages: ["GET /repos/{owner}/{repo}/pages"],
     getPagesBuild: ["GET /repos/{owner}/{repo}/pages/builds/{build_id}"],
+    getPagesDeployment: [
+      "GET /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}"
+    ],
     getPagesHealthCheck: ["GET /repos/{owner}/{repo}/pages/health"],
     getParticipationStats: ["GET /repos/{owner}/{repo}/stats/participation"],
     getPullRequestReviewProtection: [
@@ -9673,6 +9737,9 @@ var Endpoints = {
     ]
   },
   securityAdvisories: {
+    createFork: [
+      "POST /repos/{owner}/{repo}/security-advisories/{ghsa_id}/forks"
+    ],
     createPrivateVulnerabilityReport: [
       "POST /repos/{owner}/{repo}/security-advisories/reports"
     ],
@@ -10164,7 +10231,7 @@ var import_endpoint = __nccwpck_require__(9440);
 var import_universal_user_agent = __nccwpck_require__(5030);
 
 // pkg/dist-src/version.js
-var VERSION = "8.1.6";
+var VERSION = "8.2.0";
 
 // pkg/dist-src/is-plain-object.js
 function isPlainObject(value) {
@@ -10308,11 +10375,17 @@ async function getResponseData(response) {
 function toErrorMessage(data) {
   if (typeof data === "string")
     return data;
+  let suffix;
+  if ("documentation_url" in data) {
+    suffix = ` - ${data.documentation_url}`;
+  } else {
+    suffix = "";
+  }
   if ("message" in data) {
     if (Array.isArray(data.errors)) {
-      return `${data.message}: ${data.errors.map(JSON.stringify).join(", ")}`;
+      return `${data.message}: ${data.errors.map(JSON.stringify).join(", ")}${suffix}`;
     }
-    return data.message;
+    return `${data.message}${suffix}`;
   }
   return `Unknown error: ${JSON.stringify(data)}`;
 }
@@ -15358,134 +15431,6 @@ module.exports["default"] = CacheableLookup;
 
 /***/ }),
 
-/***/ 4340:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-const {PassThrough: PassThroughStream} = __nccwpck_require__(2781);
-
-module.exports = options => {
-	options = {...options};
-
-	const {array} = options;
-	let {encoding} = options;
-	const isBuffer = encoding === 'buffer';
-	let objectMode = false;
-
-	if (array) {
-		objectMode = !(encoding || isBuffer);
-	} else {
-		encoding = encoding || 'utf8';
-	}
-
-	if (isBuffer) {
-		encoding = null;
-	}
-
-	const stream = new PassThroughStream({objectMode});
-
-	if (encoding) {
-		stream.setEncoding(encoding);
-	}
-
-	let length = 0;
-	const chunks = [];
-
-	stream.on('data', chunk => {
-		chunks.push(chunk);
-
-		if (objectMode) {
-			length = chunks.length;
-		} else {
-			length += chunk.length;
-		}
-	});
-
-	stream.getBufferedValue = () => {
-		if (array) {
-			return chunks;
-		}
-
-		return isBuffer ? Buffer.concat(chunks, length) : chunks.join('');
-	};
-
-	stream.getBufferedLength = () => length;
-
-	return stream;
-};
-
-
-/***/ }),
-
-/***/ 7040:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-const {constants: BufferConstants} = __nccwpck_require__(4300);
-const pump = __nccwpck_require__(8341);
-const bufferStream = __nccwpck_require__(4340);
-
-class MaxBufferError extends Error {
-	constructor() {
-		super('maxBuffer exceeded');
-		this.name = 'MaxBufferError';
-	}
-}
-
-async function getStream(inputStream, options) {
-	if (!inputStream) {
-		return Promise.reject(new Error('Expected a stream'));
-	}
-
-	options = {
-		maxBuffer: Infinity,
-		...options
-	};
-
-	const {maxBuffer} = options;
-
-	let stream;
-	await new Promise((resolve, reject) => {
-		const rejectPromise = error => {
-			// Don't retrieve an oversized buffer.
-			if (error && stream.getBufferedLength() <= BufferConstants.MAX_LENGTH) {
-				error.bufferedData = stream.getBufferedValue();
-			}
-
-			reject(error);
-		};
-
-		stream = pump(inputStream, bufferStream(options), error => {
-			if (error) {
-				rejectPromise(error);
-				return;
-			}
-
-			resolve();
-		});
-
-		stream.on('data', () => {
-			if (stream.getBufferedLength() > maxBuffer) {
-				rejectPromise(new MaxBufferError());
-			}
-		});
-	});
-
-	return stream.getBufferedValue();
-}
-
-module.exports = getStream;
-// TODO: Remove this for the next major release
-module.exports["default"] = getStream;
-module.exports.buffer = (stream, options) => getStream(stream, {...options, encoding: 'buffer'});
-module.exports.array = (stream, options) => getStream(stream, {...options, array: true});
-module.exports.MaxBufferError = MaxBufferError;
-
-
-/***/ }),
-
 /***/ 8116:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -15495,7 +15440,7 @@ module.exports.MaxBufferError = MaxBufferError;
 const EventEmitter = __nccwpck_require__(2361);
 const urlLib = __nccwpck_require__(7310);
 const normalizeUrl = __nccwpck_require__(7952);
-const getStream = __nccwpck_require__(7040);
+const getStream = __nccwpck_require__(1766);
 const CachePolicy = __nccwpck_require__(1002);
 const Response = __nccwpck_require__(9004);
 const lowercaseKeys = __nccwpck_require__(9662);
@@ -17525,15 +17470,15 @@ exports.isEmpty = isEmpty;
 
 var reusify = __nccwpck_require__(2113)
 
-function fastqueue (context, worker, concurrency) {
+function fastqueue (context, worker, _concurrency) {
   if (typeof context === 'function') {
-    concurrency = worker
+    _concurrency = worker
     worker = context
     context = null
   }
 
-  if (concurrency < 1) {
-    throw new Error('fastqueue concurrency must be greater than 1')
+  if (!(_concurrency >= 1)) {
+    throw new Error('fastqueue concurrency must be equal to or greater than 1')
   }
 
   var cache = reusify(Task)
@@ -17548,7 +17493,23 @@ function fastqueue (context, worker, concurrency) {
     saturated: noop,
     pause: pause,
     paused: false,
-    concurrency: concurrency,
+
+    get concurrency () {
+      return _concurrency
+    },
+    set concurrency (value) {
+      if (!(value >= 1)) {
+        throw new Error('fastqueue concurrency must be equal to or greater than 1')
+      }
+      _concurrency = value
+
+      if (self.paused) return
+      for (; queueHead && _running < _concurrency;) {
+        _running++
+        release()
+      }
+    },
+
     running: running,
     resume: resume,
     idle: idle,
@@ -17598,7 +17559,12 @@ function fastqueue (context, worker, concurrency) {
   function resume () {
     if (!self.paused) return
     self.paused = false
-    for (var i = 0; i < self.concurrency; i++) {
+    if (queueHead === null) {
+      _running++
+      release()
+      return
+    }
+    for (; queueHead && _running < _concurrency;) {
       _running++
       release()
     }
@@ -17617,7 +17583,7 @@ function fastqueue (context, worker, concurrency) {
     current.callback = done || noop
     current.errorHandler = errorHandler
 
-    if (_running === self.concurrency || self.paused) {
+    if (_running >= _concurrency || self.paused) {
       if (queueTail) {
         queueTail.next = current
         queueTail = current
@@ -17639,8 +17605,9 @@ function fastqueue (context, worker, concurrency) {
     current.release = release
     current.value = value
     current.callback = done || noop
+    current.errorHandler = errorHandler
 
-    if (_running === self.concurrency || self.paused) {
+    if (_running >= _concurrency || self.paused) {
       if (queueHead) {
         current.next = queueHead
         queueHead = current
@@ -17660,7 +17627,7 @@ function fastqueue (context, worker, concurrency) {
       cache.release(holder)
     }
     var next = queueHead
-    if (next) {
+    if (next && _running <= _concurrency) {
       if (!self.paused) {
         if (queueTail === queueHead) {
           queueTail = null
@@ -17723,9 +17690,9 @@ function Task () {
   }
 }
 
-function queueAsPromised (context, worker, concurrency) {
+function queueAsPromised (context, worker, _concurrency) {
   if (typeof context === 'function') {
-    concurrency = worker
+    _concurrency = worker
     worker = context
     context = null
   }
@@ -17737,7 +17704,7 @@ function queueAsPromised (context, worker, concurrency) {
       }, cb)
   }
 
-  var queue = fastqueue(context, asyncWrapper, concurrency)
+  var queue = fastqueue(context, asyncWrapper, _concurrency)
 
   var pushCb = queue.push
   var unshiftCb = queue.unshift
@@ -18065,6 +18032,134 @@ const fill = (start, end, step, options = {}) => {
 };
 
 module.exports = fill;
+
+
+/***/ }),
+
+/***/ 1585:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+const {PassThrough: PassThroughStream} = __nccwpck_require__(2781);
+
+module.exports = options => {
+	options = {...options};
+
+	const {array} = options;
+	let {encoding} = options;
+	const isBuffer = encoding === 'buffer';
+	let objectMode = false;
+
+	if (array) {
+		objectMode = !(encoding || isBuffer);
+	} else {
+		encoding = encoding || 'utf8';
+	}
+
+	if (isBuffer) {
+		encoding = null;
+	}
+
+	const stream = new PassThroughStream({objectMode});
+
+	if (encoding) {
+		stream.setEncoding(encoding);
+	}
+
+	let length = 0;
+	const chunks = [];
+
+	stream.on('data', chunk => {
+		chunks.push(chunk);
+
+		if (objectMode) {
+			length = chunks.length;
+		} else {
+			length += chunk.length;
+		}
+	});
+
+	stream.getBufferedValue = () => {
+		if (array) {
+			return chunks;
+		}
+
+		return isBuffer ? Buffer.concat(chunks, length) : chunks.join('');
+	};
+
+	stream.getBufferedLength = () => length;
+
+	return stream;
+};
+
+
+/***/ }),
+
+/***/ 1766:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+const {constants: BufferConstants} = __nccwpck_require__(4300);
+const pump = __nccwpck_require__(8341);
+const bufferStream = __nccwpck_require__(1585);
+
+class MaxBufferError extends Error {
+	constructor() {
+		super('maxBuffer exceeded');
+		this.name = 'MaxBufferError';
+	}
+}
+
+async function getStream(inputStream, options) {
+	if (!inputStream) {
+		return Promise.reject(new Error('Expected a stream'));
+	}
+
+	options = {
+		maxBuffer: Infinity,
+		...options
+	};
+
+	const {maxBuffer} = options;
+
+	let stream;
+	await new Promise((resolve, reject) => {
+		const rejectPromise = error => {
+			// Don't retrieve an oversized buffer.
+			if (error && stream.getBufferedLength() <= BufferConstants.MAX_LENGTH) {
+				error.bufferedData = stream.getBufferedValue();
+			}
+
+			reject(error);
+		};
+
+		stream = pump(inputStream, bufferStream(options), error => {
+			if (error) {
+				rejectPromise(error);
+				return;
+			}
+
+			resolve();
+		});
+
+		stream.on('data', () => {
+			if (stream.getBufferedLength() > maxBuffer) {
+				rejectPromise(new MaxBufferError());
+			}
+		});
+	});
+
+	return stream.getBufferedValue();
+}
+
+module.exports = getStream;
+// TODO: Remove this for the next major release
+module.exports["default"] = getStream;
+module.exports.buffer = (stream, options) => getStream(stream, {...options, encoding: 'buffer'});
+module.exports.array = (stream, options) => getStream(stream, {...options, array: true});
+module.exports.MaxBufferError = MaxBufferError;
 
 
 /***/ }),
@@ -23543,27 +23638,22 @@ class Keyv extends EventEmitter {
 				}
 
 				if (isArray) {
-					const result = [];
-
-					for (let row of data) {
+					return data.map((row, index) => {
 						if ((typeof row === 'string')) {
 							row = this.opts.deserialize(row);
 						}
 
 						if (row === undefined || row === null) {
-							result.push(undefined);
-							continue;
+							return undefined;
 						}
 
 						if (typeof row.expires === 'number' && Date.now() > row.expires) {
-							this.delete(key).then(() => undefined);
-							result.push(undefined);
-						} else {
-							result.push((options && options.raw) ? row : row.value);
+							this.delete(key[index]).then(() => undefined);
+							return undefined;
 						}
-					}
 
-					return result;
+						return (options && options.raw) ? row : row.value;
+					});
 				}
 
 				if (typeof data.expires === 'number' && Date.now() > data.expires) {
@@ -29581,6 +29671,7 @@ function runParallel (tasks, cb) {
   } catch (ex) {
     Stream = function () {}
   }
+  if (!Stream) Stream = function () {}
 
   var streamWraps = sax.EVENTS.filter(function (ev) {
     return ev !== 'error' && ev !== 'end'
@@ -30899,9 +30990,16 @@ function runParallel (tasks, cb) {
           }
 
           if (c === ';') {
-            parser[buffer] += parseEntity(parser)
-            parser.entity = ''
-            parser.state = returnState
+            if (parser.opt.unparsedEntities) {
+              var parsedEntity = parseEntity(parser)
+              parser.entity = ''
+              parser.state = returnState
+              parser.write(parsedEntity)
+            } else {
+              parser[buffer] += parseEntity(parser)
+              parser.entity = ''
+              parser.state = returnState
+            }
           } else if (isMatch(parser.entity.length ? entityBody : entityStart, c)) {
             parser.entity += c
           } else {
@@ -30913,8 +31011,9 @@ function runParallel (tasks, cb) {
 
           continue
 
-        default:
+        default: /* istanbul ignore next */ {
           throw new Error(parser, 'Unknown state: ' + parser.state)
+        }
       }
     } // while
 
@@ -43339,6 +43438,9 @@ function httpRedirectFetch (fetchParams, response) {
   if (!sameOrigin(requestCurrentURL(request), locationURL)) {
     // https://fetch.spec.whatwg.org/#cors-non-wildcard-request-header-name
     request.headersList.delete('authorization')
+
+    // https://fetch.spec.whatwg.org/#authentication-entries
+    request.headersList.delete('proxy-authorization', true)
 
     // "Cookie" and "Host" are forbidden request-headers, which undici doesn't implement.
     request.headersList.delete('cookie')
@@ -59571,7 +59673,7 @@ Dicer.prototype._write = function (data, encoding, cb) {
   if (this._headerFirst && this._isPreamble) {
     if (!this._part) {
       this._part = new PartStream(this._partOpts)
-      if (this._events.preamble) { this.emit('preamble', this._part) } else { this._ignore() }
+      if (this.listenerCount('preamble') !== 0) { this.emit('preamble', this._part) } else { this._ignore() }
     }
     const r = this._hparser.push(data)
     if (!this._inHeader && r !== undefined && r < data.length) { data = data.slice(r) } else { return cb() }
@@ -59628,7 +59730,7 @@ Dicer.prototype._oninfo = function (isMatch, data, start, end) {
       }
     }
     if (this._dashes === 2) {
-      if ((start + i) < end && this._events.trailer) { this.emit('trailer', data.slice(start + i, end)) }
+      if ((start + i) < end && this.listenerCount('trailer') !== 0) { this.emit('trailer', data.slice(start + i, end)) }
       this.reset()
       this._finished = true
       // no more parts will be added
@@ -59646,7 +59748,13 @@ Dicer.prototype._oninfo = function (isMatch, data, start, end) {
     this._part._read = function (n) {
       self._unpause()
     }
-    if (this._isPreamble && this._events.preamble) { this.emit('preamble', this._part) } else if (this._isPreamble !== true && this._events.part) { this.emit('part', this._part) } else { this._ignore() }
+    if (this._isPreamble && this.listenerCount('preamble') !== 0) {
+      this.emit('preamble', this._part)
+    } else if (this._isPreamble !== true && this.listenerCount('part') !== 0) {
+      this.emit('part', this._part)
+    } else {
+      this._ignore()
+    }
     if (!this._isPreamble) { this._inHeader = true }
   }
   if (data && start < end && !this._ignoreData) {
@@ -60329,7 +60437,7 @@ function Multipart (boy, cfg) {
 
         ++nfiles
 
-        if (!boy._events.file) {
+        if (boy.listenerCount('file') === 0) {
           self.parser._ignore()
           return
         }
@@ -60858,7 +60966,7 @@ const decoders = {
     if (textDecoders.has(this.toString())) {
       try {
         return textDecoders.get(this).decode(data)
-      } catch (e) { }
+      } catch {}
     }
     return typeof data === 'string'
       ? data

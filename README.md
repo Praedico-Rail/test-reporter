@@ -1,5 +1,7 @@
 # Test Reporter
 
+This fork generates Github Summaries rather than check-runs as that provides a more consistant expirence in Github.
+
 This [Github Action](https://github.com/features/actions) displays test results from popular testing frameworks directly in GitHub.
 
 ✔️ Parses test results in XML or JSON format and creates nice report as GitHub Check Run or GitHub Actions job summaries

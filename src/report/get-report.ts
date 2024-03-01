@@ -5,24 +5,23 @@ import {DEFAULT_LOCALE} from '../utils/node-utils'
 import {getFirstNonEmptyLine} from '../utils/parse-utils'
 import {slug} from '../utils/slugger'
 
-const MAX_REPORT_LENGTH = 65535
-const MAX_ACTIONS_SUMMARY_LENGTH = 131072 // 1048576 soon
+const MAX_REPORT_LENGTH = 1048576
 
 export interface ReportOptions {
   listSuites: 'all' | 'failed' | 'none'
   listTests: 'all' | 'failed' | 'none'
+  slugPrefix: string
   baseUrl: string
   onlySummary: boolean
-  useActionsSummary: boolean
   badgeTitle: string
 }
 
 const defaultOptions: ReportOptions = {
   listSuites: 'all',
   listTests: 'all',
+  slugPrefix: '',
   baseUrl: '',
   onlySummary: false,
-  useActionsSummary: true,
   badgeTitle: 'tests'
 }
 
@@ -35,7 +34,7 @@ export function getReport(results: TestRunResult[], options: ReportOptions = def
   let lines = renderReport(results, opts)
   let report = lines.join('\n')
 
-  if (getByteLength(report) <= getMaxReportLength(options)) {
+  if (getByteLength(report) <= MAX_REPORT_LENGTH) {
     return report
   }
 
@@ -44,24 +43,20 @@ export function getReport(results: TestRunResult[], options: ReportOptions = def
     opts.listTests = 'failed'
     lines = renderReport(results, opts)
     report = lines.join('\n')
-    if (getByteLength(report) <= getMaxReportLength(options)) {
+    if (getByteLength(report) <= MAX_REPORT_LENGTH) {
       return report
     }
   }
 
-  core.warning(`Test report summary exceeded limit of ${getMaxReportLength(options)} bytes and will be trimmed`)
-  return trimReport(lines, options)
+  core.warning(`Test report summary exceeded limit of ${MAX_REPORT_LENGTH} bytes and will be trimmed`)
+  return trimReport(lines)
 }
 
-function getMaxReportLength(options: ReportOptions = defaultOptions): number {
-  return options.useActionsSummary ? MAX_ACTIONS_SUMMARY_LENGTH : MAX_REPORT_LENGTH
-}
-
-function trimReport(lines: string[], options: ReportOptions): string {
+function trimReport(lines: string[]): string {
   const closingBlock = '```'
-  const errorMsg = `**Report exceeded GitHub limit of ${getMaxReportLength(options)} bytes and has been trimmed**`
+  const errorMsg = `**Report exceeded GitHub limit of ${MAX_REPORT_LENGTH} bytes and has been trimmed**`
   const maxErrorMsgLength = closingBlock.length + errorMsg.length + 2
-  const maxReportLength = getMaxReportLength(options) - maxErrorMsgLength
+  const maxReportLength = MAX_REPORT_LENGTH - maxErrorMsgLength
 
   let reportLength = 0
   let codeBlock = false
@@ -155,10 +150,11 @@ function getTestRunsReport(testRuns: TestRunResult[], options: ReportOptions): s
       .map(tr => {
         const time = formatTime(tr.time)
         const name = tr.path
-        const passed = tr.passed > 0 ? `${tr.passed} ${Icon.success}` : ''
-        const failed = tr.failed > 0 ? `${tr.failed} ${Icon.fail}` : ''
-        const skipped = tr.skipped > 0 ? `${tr.skipped} ${Icon.skip}` : ''
-        return [name, passed, failed, skipped, time]
+        const statusIcon = tr.failed > 0 ? Icon.fail : tr.passed > 0 ? Icon.success : Icon.skip
+        const passed = tr.passed === 0 ? '' : tr.passed
+        const failed = tr.failed === 0 ? '' : tr.failed
+        const skipped = tr.skipped === 0 ? '' : tr.skipped
+        return [statusIcon + ' ' + name, passed, failed, skipped, time]
       })
 
     const resultsTable = table(
@@ -185,7 +181,7 @@ function getSuitesReport(tr: TestRunResult, runIndex: number, options: ReportOpt
   const suites = options.listSuites === 'failed' ? tr.failedSuites : tr.suites
 
   if (options.listSuites !== 'none') {
-    const trSlug = makeRunSlug(runIndex)
+    const trSlug = makeRunSlug(runIndex, options.slugPrefix)
     const nameLink = `<a id="${trSlug.id}" href="${options.baseUrl + trSlug.link}">${tr.path}</a>`
     const icon = getResultIcon(tr.result)
     sections.push(`## ${icon}\xa0${nameLink}`)
@@ -205,12 +201,13 @@ function getSuitesReport(tr: TestRunResult, runIndex: number, options: ReportOpt
           const tsTime = formatTime(s.time)
           const tsName = s.name
           const skipLink = options.listTests === 'none' || (options.listTests === 'failed' && s.result !== 'failed')
-          const tsAddr = options.baseUrl + makeSuiteSlug(runIndex, suiteIndex).link
+          const tsAddr = options.baseUrl + makeSuiteSlug(runIndex, suiteIndex, options.slugPrefix).link
           const tsNameLink = skipLink ? tsName : link(tsName, tsAddr)
-          const passed = s.passed > 0 ? `${s.passed} ${Icon.success}` : ''
-          const failed = s.failed > 0 ? `${s.failed} ${Icon.fail}` : ''
-          const skipped = s.skipped > 0 ? `${s.skipped} ${Icon.skip}` : ''
-          return [tsNameLink, passed, failed, skipped, tsTime]
+          const statusIcon = s.failed > 0 ? Icon.fail : s.passed > 0 ? Icon.success : Icon.skip
+          const passed = s.passed === 0 ? '' : s.passed
+          const failed = s.failed === 0 ? '' : s.failed
+          const skipped = s.skipped === 0 ? '' : s.skipped
+          return [statusIcon + ' ' + tsNameLink, passed, failed, skipped, tsTime]
         })
       )
       sections.push(suitesTable)
@@ -240,7 +237,7 @@ function getTestsReport(ts: TestSuiteResult, runIndex: number, suiteIndex: numbe
   const sections: string[] = []
 
   const tsName = ts.name
-  const tsSlug = makeSuiteSlug(runIndex, suiteIndex)
+  const tsSlug = makeSuiteSlug(runIndex, suiteIndex, options.slugPrefix)
   const tsNameLink = `<a id="${tsSlug.id}" href="${options.baseUrl + tsSlug.link}">${tsName}</a>`
   const icon = getResultIcon(ts.result)
   sections.push(`### ${icon}\xa0${tsNameLink}`)
@@ -269,14 +266,14 @@ function getTestsReport(ts: TestSuiteResult, runIndex: number, suiteIndex: numbe
   return sections
 }
 
-function makeRunSlug(runIndex: number): {id: string; link: string} {
+function makeRunSlug(runIndex: number, slugPrefix: string): {id: string; link: string} {
   // use prefix to avoid slug conflicts after escaping the paths
-  return slug(`r${runIndex}`)
+  return slug(`r${slugPrefix}${runIndex}`)
 }
 
-function makeSuiteSlug(runIndex: number, suiteIndex: number): {id: string; link: string} {
+function makeSuiteSlug(runIndex: number, suiteIndex: number, slugPrefix: string): {id: string; link: string} {
   // use prefix to avoid slug conflicts after escaping the paths
-  return slug(`r${runIndex}s${suiteIndex}`)
+  return slug(`r${slugPrefix}${runIndex}s${suiteIndex}`)
 }
 
 function getResultIcon(result: TestExecutionResult): string {
