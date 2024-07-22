@@ -1,5 +1,5 @@
 ![Tests passed successfully](https://img.shields.io/badge/tests-833%20passed%2C%206%20skipped-success)
-## 🟢 <a id="user-content-r0" href="#r0">fixtures/external/mocha/mocha-test-results.json</a>
+## 🟢 <a id="user-content-r0" href="#user-content-r0">fixtures/external/mocha/mocha-test-results.json</a>
 **839** tests were completed in **6s** with **833** passed, **0** failed and **6** skipped.
 |Test suite|Passed|Failed|Skipped|Time|
 |:---|---:|---:|---:|---:|
