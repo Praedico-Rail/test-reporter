@@ -1753,15 +1753,15 @@ function getTestsReport(ts, runIndex, suiteIndex, options) {
     const tsNameLink = `<a id="${tsSlug.id}" href="${options.baseUrl + tsSlug.link}">${tsName}</a>`;
     const icon = getResultIcon(ts.result);
     sections.push(`### ${icon}\xa0${tsNameLink}`);
-    sections.push('```');
     for (const grp of groups) {
+        sections.push('```');
         if (grp.name) {
             sections.push(grp.name);
         }
         const space = grp.name ? '  ' : '';
         for (const tc of grp.tests) {
             const result = getResultIcon(tc.result);
-            sections.push(`${space}${result} ${tc.name}`);
+            sections.push(`${space}${result} ${tc.name} [${(0, markdown_utils_1.formatTime)(tc.time)}]`);
             if (tc.error) {
                 const lines = (_c = ((_a = tc.error.message) !== null && _a !== void 0 ? _a : (_b = (0, parse_utils_1.getFirstNonEmptyLine)(tc.error.details)) === null || _b === void 0 ? void 0 : _b.trim())) === null || _c === void 0 ? void 0 : _c.split(/\r?\n/g).map(l => '\t' + l);
                 if (lines) {
@@ -1769,8 +1769,8 @@ function getTestsReport(ts, runIndex, suiteIndex, options) {
                 }
             }
         }
+        sections.push('```');
     }
-    sections.push('```');
     return sections;
 }
 function makeRunSlug(runIndex, slugPrefix) {
@@ -2314,7 +2314,7 @@ function slug(name) {
         .replace(/[./\\]/g, '-')
         .replace(/[^\w-]/g, '');
     const id = `user-content-${slugId}`;
-    const link = `#${slugId}`;
+    const link = `#user-content-${slugId}`;
     return { id, link };
 }
 
