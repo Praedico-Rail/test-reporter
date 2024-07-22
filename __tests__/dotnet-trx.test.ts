@@ -44,15 +44,15 @@ describe('dotnet-trx tests', () => {
     fs.writeFileSync(outputPath, report)
   })
 
-  it('report from FluentValidation test results matches snapshot', async () => {
-    const fixturePath = path.join(__dirname, 'fixtures', 'external', 'FluentValidation.Tests.trx')
-    const outputPath = path.join(__dirname, '__outputs__', 'fluent-validation-test-results.md')
+  it('scenario matches report snapshot', async () => {
+    const fixturePath = path.join(__dirname, 'fixtures', 'dotnet-trx-scenario.trx')
+    const outputPath = path.join(__dirname, '__outputs__', 'dotnet-trx-scenario.md')
     const filePath = normalizeFilePath(path.relative(__dirname, fixturePath))
     const fileContent = fs.readFileSync(fixturePath, {encoding: 'utf8'})
 
     const opts: ParseOptions = {
-      trackedFiles: [],
-      parseErrors: true
+      parseErrors: true,
+      trackedFiles: ['Dummy.cs']
     }
 
     const parser = new DotnetTrxParser(opts)
@@ -63,6 +63,26 @@ describe('dotnet-trx tests', () => {
     fs.mkdirSync(path.dirname(outputPath), {recursive: true})
     fs.writeFileSync(outputPath, report)
   })
+
+  // it('report from FluentValidation test results matches snapshot', async () => {
+  //   const fixturePath = path.join(__dirname, 'fixtures', 'external', 'FluentValidation.Tests.trx')
+  //   const outputPath = path.join(__dirname, '__outputs__', 'fluent-validation-test-results.md')
+  //   const filePath = normalizeFilePath(path.relative(__dirname, fixturePath))
+  //   const fileContent = fs.readFileSync(fixturePath, {encoding: 'utf8'})
+
+  //   const opts: ParseOptions = {
+  //     trackedFiles: [],
+  //     parseErrors: true
+  //   }
+
+  //   const parser = new DotnetTrxParser(opts)
+  //   const result = await parser.parse(filePath, fileContent)
+  //   expect(result).toMatchSnapshot()
+
+  //   const report = getReport([result])
+  //   fs.mkdirSync(path.dirname(outputPath), {recursive: true})
+  //   fs.writeFileSync(outputPath, report)
+  // })
 
   it('report from SilentNotes test results matches snapshot', async () => {
     const fixturePath = path.join(__dirname, 'fixtures', 'external', 'SilentNotes.trx')

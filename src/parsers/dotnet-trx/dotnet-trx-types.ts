@@ -23,6 +23,7 @@ export interface TestDefinitions {
 
 export interface UnitTest {
   $: {
+    name: string
     id: string
   }
   TestMethod: TestMethod[]
@@ -45,6 +46,7 @@ export interface UnitTestResult {
     testName: string
     duration?: string
     outcome: Outcome
+    startTime: string
   }
   Output: Output[]
 }

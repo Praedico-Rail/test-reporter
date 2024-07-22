@@ -1,0 +1,183 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="85d10a5f-81c1-4589-bc3a-40820ecfeb85" name="PatrikHusfloen@DESKTOP-6LBQMPV 2024-07-22 14:01:02" runUser="AzureAD\PatrikHusfloen" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2024-07-22T14:01:02.4975743+02:00" queuing="2024-07-22T14:01:02.4975747+02:00" start="2024-07-22T13:55:58.9014410+02:00" finish="2024-07-22T14:01:07.8499036+02:00" />
+  <TestSettings name="default" id="4fbef63c-97c1-4718-9584-0e07587a2eb8">
+    <Deployment runDeploymentRoot="PatrikHusfloen_DESKTOP-6LBQMPV_2024-07-22_14_01_02" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="49e67b7c-18d8-4475-ba23-3c60d32ef095" testId="1855c48f-b979-0b31-5aad-6b0c27e5f1da" testName="02. Step 2" computerName="DESKTOP-6LBQMPV" duration="00:00:00.0010000" startTime="2024-07-22T14:01:02.4320353+02:00" endTime="2024-07-22T14:01:02.4320354+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="49e67b7c-18d8-4475-ba23-3c60d32ef095">
+      <Output>
+        <StdOut>after step 2</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="79eecc89-d060-4b11-82fd-aa02e4c07dc8" testId="dc497a50-10ab-6946-c65d-c7b649ff1d42" testName="01. Theory step 1" computerName="DESKTOP-6LBQMPV" duration="00:00:00.0010000" startTime="2024-07-22T14:01:02.4435512+02:00" endTime="2024-07-22T14:01:02.4435513+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="79eecc89-d060-4b11-82fd-aa02e4c07dc8">
+      <Output>
+        <StdOut>Number is 2</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="533e7dd7-67e4-4ef4-9510-625268f09526" testId="04dde47b-0673-c1f9-ef88-7c1dac5bf235" testName="Simple2 Test" computerName="DESKTOP-6LBQMPV" duration="00:00:00.0075683" startTime="2024-07-22T14:01:02.4245165+02:00" endTime="2024-07-22T14:01:02.4245170+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="533e7dd7-67e4-4ef4-9510-625268f09526">
+      <Output>
+        <StdOut>I'm simple</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="06a14331-9eb1-406b-8b40-b51b104ba1b5" testId="dc497a50-10ab-6946-c65d-c7b649ff1d42" testName="Theory scenario(number: 2)" computerName="DESKTOP-6LBQMPV" duration="00:00:00.0001204" startTime="2024-07-22T14:01:02.4436865+02:00" endTime="2024-07-22T14:01:02.4436867+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="06a14331-9eb1-406b-8b40-b51b104ba1b5">
+      <Output>
+        <StdOut>Number is 2&#xD;
+End of theory number is still 2</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="c30f910b-e9c8-45c7-a286-ddc482260539" testId="1855c48f-b979-0b31-5aad-6b0c27e5f1da" testName="Test scenario" computerName="DESKTOP-6LBQMPV" duration="00:00:00.0017077" startTime="2024-07-22T14:01:02.4319568+02:00" endTime="2024-07-22T14:01:02.4319569+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c30f910b-e9c8-45c7-a286-ddc482260539">
+      <Output>
+        <StdOut>before step 1&#xD;
+after step 1&#xD;
+after step 2</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="78a7e780-963e-44f0-953f-7b6eda362e87" testId="c4307872-e630-ba6b-3d1c-20ff971acfb2" testName="Simple Theory(index: 2, enable: False)" computerName="DESKTOP-6LBQMPV" duration="00:00:00.0075501" startTime="2024-07-22T14:01:02.4304666+02:00" endTime="2024-07-22T14:01:02.4304669+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="78a7e780-963e-44f0-953f-7b6eda362e87">
+      <Output>
+        <StdOut>Index is 2</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="ea28904b-4a02-48f6-a8f1-6afbc00e53a7" testId="1855c48f-b979-0b31-5aad-6b0c27e5f1da" testName="01. Step 1" computerName="DESKTOP-6LBQMPV" duration="00:00:00.0010000" startTime="2024-07-22T14:01:02.4318298+02:00" endTime="2024-07-22T14:01:02.4318298+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ea28904b-4a02-48f6-a8f1-6afbc00e53a7">
+      <Output>
+        <StdOut>before step 1&#xD;
+after step 1</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="6a332d19-8e18-44b4-89f8-62f16c201a97" testId="d5e006c9-8ffa-7511-131e-47e320565d81" testName="Simple Test" computerName="DESKTOP-6LBQMPV" duration="00:00:00.0000596" startTime="2024-07-22T14:01:02.4439515+02:00" endTime="2024-07-22T14:01:02.4439515+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="6a332d19-8e18-44b4-89f8-62f16c201a97">
+      <Output>
+        <StdOut>I'm simple</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="555c2db6-7008-4bcc-b24f-218556ecfdac" testId="c96947d9-55b3-8945-0c57-9a9e62db48e9" testName="01. Theory step 1" computerName="DESKTOP-6LBQMPV" duration="00:00:00.0010000" startTime="2024-07-22T14:01:02.4321847+02:00" endTime="2024-07-22T14:01:02.4321848+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="555c2db6-7008-4bcc-b24f-218556ecfdac">
+      <Output>
+        <StdOut>Number is 1</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="41f944c3-3608-43ce-80da-510183386d89" testId="dc497a50-10ab-6946-c65d-c7b649ff1d42" testName="02. Theory step 2" computerName="DESKTOP-6LBQMPV" duration="00:00:00.0010000" startTime="2024-07-22T14:01:02.4437856+02:00" endTime="2024-07-22T14:01:02.4437857+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="41f944c3-3608-43ce-80da-510183386d89">
+      <Output>
+        <StdOut>End of theory number is still 2</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="cefb6896-438c-4313-8b91-5cf2e9091d2e" testId="c96947d9-55b3-8945-0c57-9a9e62db48e9" testName="02. Theory step 2" computerName="DESKTOP-6LBQMPV" duration="00:00:00.0010000" startTime="2024-07-22T14:01:02.4324229+02:00" endTime="2024-07-22T14:01:02.4324230+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="cefb6896-438c-4313-8b91-5cf2e9091d2e">
+      <Output>
+        <StdOut>End of theory number is still 1</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="e8c4585a-86e8-4c7b-b2f0-dce9f43fe83d" testId="81243fa6-d573-ccb8-c450-3aca9a86b13a" testName="Simple Theory(index: 1, enable: True)" computerName="DESKTOP-6LBQMPV" duration="00:00:00.0002876" startTime="2024-07-22T14:01:02.4316936+02:00" endTime="2024-07-22T14:01:02.4316937+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="e8c4585a-86e8-4c7b-b2f0-dce9f43fe83d">
+      <Output>
+        <StdOut>Index is 1</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="19941ae2-e000-499c-a285-7089ba4cb72b" testId="c96947d9-55b3-8945-0c57-9a9e62db48e9" testName="Theory scenario(number: 1)" computerName="DESKTOP-6LBQMPV" duration="00:00:00.0001472" startTime="2024-07-22T14:01:02.4323281+02:00" endTime="2024-07-22T14:01:02.4323281+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="19941ae2-e000-499c-a285-7089ba4cb72b">
+      <Output>
+        <StdOut>Number is 1&#xD;
+End of theory number is still 1</StdOut>
+      </Output>
+    </UnitTestResult>
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="Theory scenario(number: 2)" storage="c:\dev\rail\pr\test\rail.integrationtests\bin\debug\net8.0\rail.integrationtests.dll" id="dc497a50-10ab-6946-c65d-c7b649ff1d42">
+      <Execution id="79eecc89-d060-4b11-82fd-aa02e4c07dc8" />
+      <TestMethod codeBase="C:\dev\Rail\pr\test\Rail.IntegrationTests\bin\Debug\net8.0\Rail.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Rail.IntegrationTests.Tests.Dummy" name="TheoryScenario" />
+    </UnitTest>
+    <UnitTest name="Simple2 Test" storage="c:\dev\rail\pr\test\rail.integrationtests\bin\debug\net8.0\rail.integrationtests.dll" id="04dde47b-0673-c1f9-ef88-7c1dac5bf235">
+      <Execution id="533e7dd7-67e4-4ef4-9510-625268f09526" />
+      <TestMethod codeBase="C:\dev\Rail\pr\test\Rail.IntegrationTests\bin\Debug\net8.0\Rail.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Rail.IntegrationTests.Tests.Dummy2" name="SimpleTest" />
+    </UnitTest>
+    <UnitTest name="Test scenario" storage="c:\dev\rail\pr\test\rail.integrationtests\bin\debug\net8.0\rail.integrationtests.dll" id="1855c48f-b979-0b31-5aad-6b0c27e5f1da">
+      <Execution id="ea28904b-4a02-48f6-a8f1-6afbc00e53a7" />
+      <TestMethod codeBase="C:\dev\Rail\pr\test\Rail.IntegrationTests\bin\Debug\net8.0\Rail.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Rail.IntegrationTests.Tests.Dummy" name="Foo" />
+    </UnitTest>
+    <UnitTest name="Simple Theory(index: 2, enable: False)" storage="c:\dev\rail\pr\test\rail.integrationtests\bin\debug\net8.0\rail.integrationtests.dll" id="c4307872-e630-ba6b-3d1c-20ff971acfb2">
+      <Execution id="78a7e780-963e-44f0-953f-7b6eda362e87" />
+      <TestMethod codeBase="C:\dev\Rail\pr\test\Rail.IntegrationTests\bin\Debug\net8.0\Rail.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Rail.IntegrationTests.Tests.Dummy" name="SimpleTheory" />
+    </UnitTest>
+    <UnitTest name="Simple Theory(index: 1, enable: True)" storage="c:\dev\rail\pr\test\rail.integrationtests\bin\debug\net8.0\rail.integrationtests.dll" id="81243fa6-d573-ccb8-c450-3aca9a86b13a">
+      <Execution id="e8c4585a-86e8-4c7b-b2f0-dce9f43fe83d" />
+      <TestMethod codeBase="C:\dev\Rail\pr\test\Rail.IntegrationTests\bin\Debug\net8.0\Rail.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Rail.IntegrationTests.Tests.Dummy" name="SimpleTheory" />
+    </UnitTest>
+    <UnitTest name="Simple Test" storage="c:\dev\rail\pr\test\rail.integrationtests\bin\debug\net8.0\rail.integrationtests.dll" id="d5e006c9-8ffa-7511-131e-47e320565d81">
+      <Execution id="6a332d19-8e18-44b4-89f8-62f16c201a97" />
+      <TestMethod codeBase="C:\dev\Rail\pr\test\Rail.IntegrationTests\bin\Debug\net8.0\Rail.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Rail.IntegrationTests.Tests.Dummy" name="SimpleTest" />
+    </UnitTest>
+    <UnitTest name="Theory scenario(number: 1)" storage="c:\dev\rail\pr\test\rail.integrationtests\bin\debug\net8.0\rail.integrationtests.dll" id="c96947d9-55b3-8945-0c57-9a9e62db48e9">
+      <Execution id="555c2db6-7008-4bcc-b24f-218556ecfdac" />
+      <TestMethod codeBase="C:\dev\Rail\pr\test\Rail.IntegrationTests\bin\Debug\net8.0\Rail.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Rail.IntegrationTests.Tests.Dummy" name="TheoryScenario" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="1855c48f-b979-0b31-5aad-6b0c27e5f1da" executionId="49e67b7c-18d8-4475-ba23-3c60d32ef095" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="dc497a50-10ab-6946-c65d-c7b649ff1d42" executionId="79eecc89-d060-4b11-82fd-aa02e4c07dc8" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="04dde47b-0673-c1f9-ef88-7c1dac5bf235" executionId="533e7dd7-67e4-4ef4-9510-625268f09526" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="dc497a50-10ab-6946-c65d-c7b649ff1d42" executionId="06a14331-9eb1-406b-8b40-b51b104ba1b5" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="1855c48f-b979-0b31-5aad-6b0c27e5f1da" executionId="c30f910b-e9c8-45c7-a286-ddc482260539" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="c4307872-e630-ba6b-3d1c-20ff971acfb2" executionId="78a7e780-963e-44f0-953f-7b6eda362e87" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="1855c48f-b979-0b31-5aad-6b0c27e5f1da" executionId="ea28904b-4a02-48f6-a8f1-6afbc00e53a7" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d5e006c9-8ffa-7511-131e-47e320565d81" executionId="6a332d19-8e18-44b4-89f8-62f16c201a97" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="c96947d9-55b3-8945-0c57-9a9e62db48e9" executionId="555c2db6-7008-4bcc-b24f-218556ecfdac" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="dc497a50-10ab-6946-c65d-c7b649ff1d42" executionId="41f944c3-3608-43ce-80da-510183386d89" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="c96947d9-55b3-8945-0c57-9a9e62db48e9" executionId="cefb6896-438c-4313-8b91-5cf2e9091d2e" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="81243fa6-d573-ccb8-c450-3aca9a86b13a" executionId="e8c4585a-86e8-4c7b-b2f0-dce9f43fe83d" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="c96947d9-55b3-8945-0c57-9a9e62db48e9" executionId="19941ae2-e000-499c-a285-7089ba4cb72b" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="13" executed="13" passed="13" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.8.1+ce9211e970 (64-bit .NET 8.0.5)&#xD;
+[xUnit.net 00:00:00.15]   Discovering: Rail.IntegrationTests (method display = ClassAndMethod, method display options = None)&#xD;
+[xUnit.net 00:00:00.25]   Discovered:  Rail.IntegrationTests (found 198 test cases)&#xD;
+[xUnit.net 00:00:00.25]   Starting:    Rail.IntegrationTests (parallel test collections = on [16 threads], stop on fail = off)&#xD;
+[xUnit.net 00:05:03.08]     Simple2 Test [PASS]&#xD;
+[xUnit.net 00:05:03.08]       Output:&#xD;
+[xUnit.net 00:05:03.08]         I'm simple&#xD;
+[xUnit.net 00:05:03.09]     Simple Theory(index: 2, enable: False) [PASS]&#xD;
+[xUnit.net 00:05:03.09]       Output:&#xD;
+[xUnit.net 00:05:03.09]         Index is 2&#xD;
+[xUnit.net 00:05:03.09]     Simple Theory(index: 1, enable: True) [PASS]&#xD;
+[xUnit.net 00:05:03.09]       Output:&#xD;
+[xUnit.net 00:05:03.09]         Index is 1&#xD;
+[xUnit.net 00:05:03.09]     01. Step 1 [PASS]&#xD;
+[xUnit.net 00:05:03.09]       Output:&#xD;
+[xUnit.net 00:05:03.09]         before step 1&#xD;
+[xUnit.net 00:05:03.09]         after step 1&#xD;
+[xUnit.net 00:05:03.09]     Test scenario [PASS]&#xD;
+[xUnit.net 00:05:03.09]       Output:&#xD;
+[xUnit.net 00:05:03.09]         before step 1&#xD;
+[xUnit.net 00:05:03.09]         after step 1&#xD;
+[xUnit.net 00:05:03.09]         after step 2&#xD;
+[xUnit.net 00:05:03.09]     02. Step 2 [PASS]&#xD;
+[xUnit.net 00:05:03.09]       Output:&#xD;
+[xUnit.net 00:05:03.09]         after step 2&#xD;
+[xUnit.net 00:05:03.09]     01. Theory step 1 [PASS]&#xD;
+[xUnit.net 00:05:03.09]       Output:&#xD;
+[xUnit.net 00:05:03.09]         Number is 1&#xD;
+[xUnit.net 00:05:03.09]     Theory scenario(number: 1) [PASS]&#xD;
+[xUnit.net 00:05:03.09]       Output:&#xD;
+[xUnit.net 00:05:03.09]         Number is 1&#xD;
+[xUnit.net 00:05:03.09]         End of theory number is still 1&#xD;
+[xUnit.net 00:05:03.09]     02. Theory step 2 [PASS]&#xD;
+[xUnit.net 00:05:03.09]       Output:&#xD;
+[xUnit.net 00:05:03.09]         End of theory number is still 1&#xD;
+[xUnit.net 00:05:03.10]     01. Theory step 1 [PASS]&#xD;
+[xUnit.net 00:05:03.10]       Output:&#xD;
+[xUnit.net 00:05:03.10]         Number is 2&#xD;
+[xUnit.net 00:05:03.10]     Theory scenario(number: 2) [PASS]&#xD;
+[xUnit.net 00:05:03.10]       Output:&#xD;
+[xUnit.net 00:05:03.10]         Number is 2&#xD;
+[xUnit.net 00:05:03.10]         End of theory number is still 2&#xD;
+[xUnit.net 00:05:03.10]     02. Theory step 2 [PASS]&#xD;
+[xUnit.net 00:05:03.10]       Output:&#xD;
+[xUnit.net 00:05:03.10]         End of theory number is still 2&#xD;
+[xUnit.net 00:05:03.10]     Simple Test [PASS]&#xD;
+[xUnit.net 00:05:03.10]       Output:&#xD;
+[xUnit.net 00:05:03.10]         I'm simple&#xD;
+[xUnit.net 00:05:08.45]   Finished:    Rail.IntegrationTests&#xD;
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>

@@ -1,6 +1,6 @@
 ![Tests passed successfully](https://img.shields.io/badge/tests-67%20passed%2C%2012%20skipped-success)
 ## 🟢 <a id="user-content-r0" href="#r0">fixtures/external/SilentNotes.trx</a>
-**79** tests were completed in **1s** with **67** passed, **0** failed and **12** skipped.
+**79** tests were completed in **446ms** with **67** passed, **0** failed and **12** skipped.
 |Test suite|Passed|Failed|Skipped|Time|
 |:---|---:|---:|---:|---:|
 |🟢 [VanillaCloudStorageClientTest.CloudStorageCredentialsTest](#r0s0)|6|||30ms|
@@ -18,119 +18,119 @@
 |🟢 [VanillaCloudStorageClientTest.SerializeableCloudStorageCredentialsTest](#r0s12)|13|||43ms|
 ### 🟢 <a id="user-content-r0s0" href="#r0s0">VanillaCloudStorageClientTest.CloudStorageCredentialsTest</a>
 ```
-🟢 AreEqualWorksWithDifferentPassword
-🟢 AreEqualWorksWithSameContent
-🟢 CorrectlyConvertsSecureStringToString
 🟢 CorrectlyConvertsStringToSecureString
-🟢 ValidateAcceptsValidCredentials
+🟢 AreEqualWorksWithSameContent
+🟢 AreEqualWorksWithDifferentPassword
 🟢 ValidateRejectsInvalidCredentials
+🟢 CorrectlyConvertsSecureStringToString
+🟢 ValidateAcceptsValidCredentials
 ```
 ### 🟢 <a id="user-content-r0s1" href="#r0s1">VanillaCloudStorageClientTest.CloudStorageProviders.DropboxCloudStorageClientTest</a>
 ```
-🟢 FileLifecycleWorks
-⚪ ReallyDoFetchToken
-⚪ ReallyDoOpenAuthorizationPageInBrowser
 ⚪ ReallyDoRefreshToken
 🟢 ThrowsAccessDeniedExceptionWithInvalidToken
+⚪ ReallyDoFetchToken
+⚪ ReallyDoOpenAuthorizationPageInBrowser
+🟢 FileLifecycleWorks
 ```
 ### 🟢 <a id="user-content-r0s2" href="#r0s2">VanillaCloudStorageClientTest.CloudStorageProviders.FtpCloudStorageClientTest</a>
 ```
 🟢 FileLifecycleWorks
-🟢 SanitizeCredentials_ChangesInvalidPrefix
+⚪ ThrowsWithInvalidUrl
 🟢 SecureSslConnectionWorks
+⚪ ThrowsWithInvalidUsername
 🟢 ThrowsWithHttpInsteadOfFtp
 ⚪ ThrowsWithInvalidPassword
-⚪ ThrowsWithInvalidUrl
-⚪ ThrowsWithInvalidUsername
+🟢 SanitizeCredentials_ChangesInvalidPrefix
 ```
 ### 🟢 <a id="user-content-r0s3" href="#r0s3">VanillaCloudStorageClientTest.CloudStorageProviders.GmxCloudStorageClientTest</a>
 ```
-🟢 ChoosesCorrectUrlForGmxComEmail
 🟢 ChoosesCorrectUrlForGmxNetEmail
+🟢 ChoosesCorrectUrlForGmxComEmail
 ```
 ### 🟢 <a id="user-content-r0s4" href="#r0s4">VanillaCloudStorageClientTest.CloudStorageProviders.GoogleCloudStorageClientTest</a>
 ```
-🟢 FileLifecycleWorks
-⚪ ReallyDoFetchToken
 ⚪ ReallyDoOpenAuthorizationPageInBrowser
+⚪ ReallyDoFetchToken
 ⚪ ReallyDoRefreshToken
+🟢 FileLifecycleWorks
 ```
 ### 🟢 <a id="user-content-r0s5" href="#r0s5">VanillaCloudStorageClientTest.CloudStorageProviders.OnedriveCloudStorageClientTest</a>
 ```
-🟢 FileLifecycleWorks
 ⚪ ReallyDoFetchToken
-⚪ ReallyDoOpenAuthorizationPageInBrowser
+🟢 FileLifecycleWorks
 ⚪ ReallyDoRefreshToken
+⚪ ReallyDoOpenAuthorizationPageInBrowser
 ```
 ### 🟢 <a id="user-content-r0s6" href="#r0s6">VanillaCloudStorageClientTest.CloudStorageProviders.WebdavCloudStorageClientTest</a>
 ```
-🟢 FileLifecycleWorks
 🟢 ParseGmxWebdavResponseCorrectly
-🟢 ParseStratoWebdavResponseCorrectly
-🟢 ThrowsWithInvalidPath
+🟢 FileLifecycleWorks
 🟢 ThrowsWithInvalidUsername
+🟢 ThrowsWithInvalidPath
+🟢 ParseStratoWebdavResponseCorrectly
 ```
 ### 🟢 <a id="user-content-r0s7" href="#r0s7">VanillaCloudStorageClientTest.CloudStorageTokenTest</a>
 ```
-🟢 AreEqualWorksWithNullDate
+🟢 SetExpiryDateBySecondsWorks
 🟢 AreEqualWorksWithSameContent
+🟢 NeedsRefreshReturnsTrueIfExpired
+🟢 SetExpiryDateBySecondsWorksWithVeryShortPeriod
+🟢 SetExpiryDateBySecondsWorksWithNull
+🟢 AreEqualWorksWithNullDate
+🟢 NeedsRefreshReturnsTrueIfNoExpirationDate
 🟢 NeedsRefreshReturnsFalseForTokenFlow
 🟢 NeedsRefreshReturnsFalseIfNotExpired
-🟢 NeedsRefreshReturnsTrueIfExpired
-🟢 NeedsRefreshReturnsTrueIfNoExpirationDate
-🟢 SetExpiryDateBySecondsWorks
-🟢 SetExpiryDateBySecondsWorksWithNull
-🟢 SetExpiryDateBySecondsWorksWithVeryShortPeriod
 ```
 ### 🟢 <a id="user-content-r0s8" href="#r0s8">VanillaCloudStorageClientTest.OAuth2.AuthorizationResponseErrorTest</a>
 ```
 🟢 ParsesAllErrorCodesCorrectly
-🟢 ParsesNullErrorCodeCorrectly
 🟢 ParsesUnknownErrorCodeCorrectly
+🟢 ParsesNullErrorCodeCorrectly
 ```
 ### 🟢 <a id="user-content-r0s9" href="#r0s9">VanillaCloudStorageClientTest.OAuth2.OAuth2UtilsTest</a>
 ```
-🟢 BuildAuthorizationRequestUrlEscapesParameters
-🟢 BuildAuthorizationRequestUrlLeavesOutOptionalParameters
-🟢 BuildAuthorizationRequestUrlThrowsWithMissingRedirectUrlForTokenFlow
-🟢 BuildAuthorizationRequestUrlUsesAllParameters
+🟢 ParseRealWorldGoogleSuccessResponse
 🟢 BuildAuthorizationRequestUrlUsesCodeVerifier
+🟢 BuildAuthorizationRequestUrlLeavesOutOptionalParameters
+🟢 BuildAuthorizationRequestUrlUsesAllParameters
+🟢 BuildAuthorizationRequestUrlEscapesParameters
+🟢 BuildAuthorizationRequestUrlThrowsWithMissingRedirectUrlForTokenFlow
 🟢 ParseRealWorldDropboxRejectResponse
 🟢 ParseRealWorldDropboxSuccessResponse
 🟢 ParseRealWorldGoogleRejectResponse
-🟢 ParseRealWorldGoogleSuccessResponse
 ```
 ### 🟢 <a id="user-content-r0s10" href="#r0s10">VanillaCloudStorageClientTest.OAuth2CloudStorageClientTest</a>
 ```
 🟢 BuildOAuth2AuthorizationRequestUrlWorks
-🟢 FetchTokenCanInterpretGoogleResponse
-🟢 FetchTokenReturnsNullForDeniedAccess
 🟢 FetchTokenThrowsWithWrongState
+🟢 FetchTokenCanInterpretGoogleResponse
 🟢 RefreshTokenCanInterpretGoogleResponse
+🟢 FetchTokenReturnsNullForDeniedAccess
 ```
 ### 🟢 <a id="user-content-r0s11" href="#r0s11">VanillaCloudStorageClientTest.SecureStringExtensionsTest</a>
 ```
-🟢 AreEqualsWorksCorrectly
-🟢 CorrectlyConvertsSecureStringToString
-🟢 CorrectlyConvertsSecureStringToUnicodeBytes
-🟢 CorrectlyConvertsSecureStringToUtf8Bytes
-🟢 CorrectlyConvertsStringToSecureString
 🟢 CorrectlyConvertsUnicodeBytesToSecureString
+🟢 AreEqualsWorksCorrectly
 🟢 CorrectlyConvertsUtf8BytesToSecureString
+🟢 CorrectlyConvertsStringToSecureString
+🟢 CorrectlyConvertsSecureStringToUnicodeBytes
+🟢 CorrectlyConvertsSecureStringToString
+🟢 CorrectlyConvertsSecureStringToUtf8Bytes
 ```
 ### 🟢 <a id="user-content-r0s12" href="#r0s12">VanillaCloudStorageClientTest.SerializeableCloudStorageCredentialsTest</a>
 ```
-🟢 DecryptAfterDesrializationCanReadAllPropertiesBack
-🟢 DecryptAfterDesrializationRespectsNullProperties
-🟢 EncryptBeforeSerializationProtectsAllNecessaryProperties
-🟢 EncryptBeforeSerializationRespectsNullProperties
-🟢 SerializedDatacontractCanBeReadBack
-🟢 SerializedDatacontractDoesNotContainNullProperties
-🟢 SerializedDatacontractDoesNotContainPlaintextData
-🟢 SerializedJsonCanBeReadBack
 🟢 SerializedJsonDoesNotContainNullProperties
-🟢 SerializedJsonDoesNotContainPlaintextData
-🟢 SerializedXmlCanBeReadBack
 🟢 SerializedXmlDoesNotContainNullProperties
+🟢 SerializedDatacontractCanBeReadBack
+🟢 SerializedDatacontractDoesNotContainPlaintextData
+🟢 EncryptBeforeSerializationProtectsAllNecessaryProperties
+🟢 SerializedJsonCanBeReadBack
 🟢 SerializedXmlDoesNotContainPlaintextData
+🟢 DecryptAfterDesrializationCanReadAllPropertiesBack
+🟢 EncryptBeforeSerializationRespectsNullProperties
+🟢 SerializedJsonDoesNotContainPlaintextData
+🟢 SerializedDatacontractDoesNotContainNullProperties
+🟢 DecryptAfterDesrializationRespectsNullProperties
+🟢 SerializedXmlCanBeReadBack
 ```
